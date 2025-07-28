@@ -2,6 +2,8 @@ package com.example.jira.helloworld;
 
 import com.atlassian.jira.bc.JiraServiceContext;
 import com.atlassian.jira.bc.JiraServiceContextImpl;
+import com.atlassian.jira.bc.security.login.LoginInfo;
+import com.atlassian.jira.bc.security.login.LoginService;
 import com.atlassian.jira.bc.user.search.UserSearchService;
 import com.atlassian.jira.component.ComponentAccessor;
 import com.atlassian.jira.user.ApplicationUser;
@@ -29,6 +31,7 @@ import static java.time.LocalTime.now;
 public class MyPluginDashboardServlet extends HttpServlet {
 
     private final TemplateRenderer templateRenderer = ComponentAccessor.getOSGiComponentInstanceOfType(TemplateRenderer.class);
+    private final LoginService loginService = ComponentAccessor.getComponent(LoginService.class);
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
@@ -46,10 +49,14 @@ public class MyPluginDashboardServlet extends HttpServlet {
         for(ApplicationUser user: users) {
             String lastLoginString = "Never";
 
+
+
             // placeholder for now because apparently jira is written by middle schoolers, thus can't fetch a simple property
             // userPropertyManager.getPropertySet(user).setString("login.lastLoginMillis", String.valueOf(System.currentTimeMillis()));
 
-            String loginMillisString  = userPropertyManager.getPropertySet(user).getString("login.lastLoginMillis");
+//            String loginMillisString  = userPropertyManager.getPropertySet(user).getString("login.lastLoginMillis");
+            LoginInfo loginInfo = loginService.getLoginInfo(user.getUsername());
+            Long millis = loginInfo.getLastLoginTime();
 //            System.out.println(
 //                    "User: " + user.getUsername() +
 //                            ", userKey: " + user.getKey() +
@@ -58,8 +65,9 @@ public class MyPluginDashboardServlet extends HttpServlet {
 //            );
 //
 //            System.out.println("Last Login Millis: " + loginMillisString);
-            if(loginMillisString != null && !loginMillisString.isEmpty()) {
-                Long millis = Long.parseLong(loginMillisString);
+//            if(loginMillisString != null && !loginMillisString.isEmpty()) {
+            if(millis != null) {
+//                Long millis = Long.parseLong(loginMillisString);
 //                LocalDateTime lastLogin = Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDateTime();
 //                lastLoginString = lastLogin.toString();
                 LocalDateTime lastLogin = Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDateTime();
