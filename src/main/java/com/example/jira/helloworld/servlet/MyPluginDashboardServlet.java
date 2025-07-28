@@ -1,4 +1,4 @@
-package servlet;
+package com.example.jira.helloworld.servlet;
 
 import com.atlassian.jira.bc.JiraServiceContext;
 import com.atlassian.jira.bc.JiraServiceContextImpl;

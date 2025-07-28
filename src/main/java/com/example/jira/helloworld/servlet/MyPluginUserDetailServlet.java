@@ -1,30 +1,21 @@
-package servlet;
+package com.example.jira.helloworld.servlet;
 
-import com.atlassian.extras.keymanager.KeyManager;
 import com.atlassian.jira.bc.JiraServiceContext;
 import com.atlassian.jira.bc.JiraServiceContextImpl;
 import com.atlassian.jira.bc.issue.search.SearchService;
-import com.atlassian.jira.bc.security.login.LoginInfo;
 import com.atlassian.jira.bc.security.login.LoginService;
 import com.atlassian.jira.bc.user.search.UserSearchService;
 import com.atlassian.jira.component.ComponentAccessor;
 import com.atlassian.jira.issue.search.SearchResults;
-import com.atlassian.jira.jql.parser.JqlParseException;
-import com.atlassian.jira.jql.parser.JqlQueryParser;
 import com.atlassian.jira.user.ApplicationUser;
 import com.atlassian.jira.web.bean.PagerFilter;
-import com.atlassian.query.Query;
-import com.atlassian.sal.api.user.UserKey;
-import com.atlassian.sal.api.user.UserManager;
 import com.atlassian.templaterenderer.TemplateRenderer;
-import com.example.jira.helloworld.jql.UserDetailsJql;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -34,13 +25,11 @@ import java.util.Map;
 
 public class MyPluginUserDetailServlet extends HttpServlet {
 
-    private final UserManager userManager = ComponentAccessor.getComponent(UserManager.class);
     private final UserSearchService userSearchService = ComponentAccessor.getComponent(UserSearchService.class);
     private final ApplicationUser currentUser = ComponentAccessor.getJiraAuthenticationContext().getLoggedInUser();
     private final JiraServiceContext serviceContext = new JiraServiceContextImpl(currentUser);
     private final LoginService loginService = ComponentAccessor.getComponent(LoginService.class);
     private final SearchService searchService = ComponentAccessor.getComponent(SearchService.class);
-    private final JqlQueryParser jqlQueryParser = ComponentAccessor.getComponent(JqlQueryParser.class);
     private final TemplateRenderer templateRenderer = ComponentAccessor.getOSGiComponentInstanceOfType(TemplateRenderer.class);
 
     @Override
