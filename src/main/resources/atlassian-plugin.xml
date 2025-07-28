@@ -57,9 +57,14 @@
 
 
     <!-- Add a servlet to handle requests -->
-    <servlet name="My Plugin Dashboard" key="my-plugin-dashboard-servlet" class="com.example.jira.helloworld.MyPluginDashboardServlet">
+    <servlet name="My Plugin Dashboard" key="my-plugin-dashboard-servlet" class="servlet.MyPluginDashboardServlet">
         <url-pattern>/my-plugin-dashboard</url-pattern>
     </servlet>
+
+    <servlet name="My Plugin User Detail" key="my-plugin-user-detail-servlet" class="servlet.MyPluginUserDetailServlet">
+        <url-pattern>/my-plugin-user-detail</url-pattern>
+    </servlet>
+
 
 
 

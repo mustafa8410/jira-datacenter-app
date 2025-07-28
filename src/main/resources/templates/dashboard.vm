@@ -25,7 +25,12 @@
                         <tbody>
                             #foreach ($user in $users)
                             <tr>
-                                <td>$user.username</td>
+                                <td>
+                                    <a href="/jira/plugins/servlet/my-plugin-user-detail?username=$user.username" target="_blank">
+                                        $user.username
+                                    </a>
+                                </td>
+
                                 <td>$user.displayName</td>
                                 <td>$user.lastLogin</td>
                             </tr>

@@ -1,4 +1,4 @@
-package com.example.jira.helloworld;
+package servlet;
 
 import com.atlassian.jira.bc.JiraServiceContext;
 import com.atlassian.jira.bc.JiraServiceContextImpl;
@@ -11,6 +11,7 @@ import com.atlassian.jira.user.UserDetails;
 import com.atlassian.jira.user.UserPropertyManager;
 import com.atlassian.sal.api.user.UserManager;
 import com.atlassian.templaterenderer.TemplateRenderer;
+import com.example.jira.helloworld.UserRow;
 import jdk.vm.ci.meta.Local;
 
 import javax.servlet.ServletException;
@@ -71,29 +72,30 @@ public class MyPluginDashboardServlet extends HttpServlet {
 //                LocalDateTime lastLogin = Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDateTime();
 //                lastLoginString = lastLogin.toString();
                 LocalDateTime lastLogin = Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDateTime();
-                LocalDateTime today = LocalDateTime.now(ZoneId.systemDefault());
-
-                long daysAgo = ChronoUnit.DAYS.between(lastLogin, today);
-                if(daysAgo == 0) {
-                    long hoursAgo = ChronoUnit.HOURS.between(lastLogin, today);
-                    if(hoursAgo == 0) {
-                        long minutesAgo = ChronoUnit.MINUTES.between(lastLogin, today);
-                        if(minutesAgo == 0) lastLoginString = "Just now";
-                        else
-                            lastLoginString = minutesAgo + " minutes ago";
-                    }
-                    else if (hoursAgo == 1)
-                        lastLoginString = "1 hour ago";
-                    else
-                        lastLoginString = hoursAgo + " hours ago";
-                }
-
-                else if(daysAgo == 1)
-                    lastLoginString = "1 day ago";
-                else if (daysAgo > 1)
-                    lastLoginString = daysAgo + " days ago";
-                else
-                    lastLoginString = "Wrong data";
+//                LocalDateTime today = LocalDateTime.now(ZoneId.systemDefault());
+//
+//                long daysAgo = ChronoUnit.DAYS.between(lastLogin, today);
+//                if(daysAgo == 0) {
+//                    long hoursAgo = ChronoUnit.HOURS.between(lastLogin, today);
+//                    if(hoursAgo == 0) {
+//                        long minutesAgo = ChronoUnit.MINUTES.between(lastLogin, today);
+//                        if(minutesAgo == 0) lastLoginString = "Just now";
+//                        else
+//                            lastLoginString = minutesAgo + " minutes ago";
+//                    }
+//                    else if (hoursAgo == 1)
+//                        lastLoginString = "1 hour ago";
+//                    else
+//                        lastLoginString = hoursAgo + " hours ago";
+//                }
+//
+//                else if(daysAgo == 1)
+//                    lastLoginString = "1 day ago";
+//                else if (daysAgo > 1)
+//                    lastLoginString = daysAgo + " days ago";
+//                else
+//                    lastLoginString = "Wrong data";
+                lastLoginString = getTimeString(lastLogin);
 
 
             }
@@ -106,4 +108,33 @@ public class MyPluginDashboardServlet extends HttpServlet {
         // render the template defined with .vm file
         templateRenderer.render("templates/dashboard.vm", contextMap, resp.getWriter());
     }
+
+    public String getTimeString(LocalDateTime lastLogin) {
+        LocalDateTime today = LocalDateTime.now(ZoneId.systemDefault());
+
+        long daysAgo = ChronoUnit.DAYS.between(lastLogin, today);
+        if(daysAgo == 0) {
+            long hoursAgo = ChronoUnit.HOURS.between(lastLogin, today);
+            if(hoursAgo == 0) {
+                long minutesAgo = ChronoUnit.MINUTES.between(lastLogin, today);
+                if(minutesAgo == 0) return "Just now";
+                else
+                    return minutesAgo + " minutes ago";
+            }
+            else if (hoursAgo == 1)
+                return "1 hour ago";
+            else
+                return hoursAgo + " hours ago";
+        }
+
+        else if(daysAgo == 1)
+            return "1 day ago";
+        else if (daysAgo > 1)
+            return daysAgo + " days ago";
+        else
+            return "Wrong data";
+
+
+    }
+
 }
