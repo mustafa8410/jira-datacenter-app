@@ -109,7 +109,7 @@ public class MyPluginDashboardServlet extends HttpServlet {
         templateRenderer.render("templates/dashboard.vm", contextMap, resp.getWriter());
     }
 
-    public String getTimeString(LocalDateTime lastLogin) {
+    public static String getTimeString(LocalDateTime lastLogin) {
         LocalDateTime today = LocalDateTime.now(ZoneId.systemDefault());
 
         long daysAgo = ChronoUnit.DAYS.between(lastLogin, today);
