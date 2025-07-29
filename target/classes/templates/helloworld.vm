@@ -1,0 +1,6 @@
+<div>
+    <strong>Hello from my plugin!</strong><br/>
+    <a href="/jira/plugins/servlet/my-plugin-dashboard" target="_blank">
+        <button type="button">Go to Plugin Dashboard</button>
+    </a>
+</div>
