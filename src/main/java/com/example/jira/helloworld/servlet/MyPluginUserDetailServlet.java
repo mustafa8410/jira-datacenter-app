@@ -6,10 +6,13 @@ import com.atlassian.jira.bc.issue.search.SearchService;
 import com.atlassian.jira.bc.security.login.LoginService;
 import com.atlassian.jira.bc.user.search.UserSearchService;
 import com.atlassian.jira.component.ComponentAccessor;
+import com.atlassian.jira.issue.Issue;
+import com.atlassian.jira.issue.search.SearchException;
 import com.atlassian.jira.issue.search.SearchResults;
 import com.atlassian.jira.user.ApplicationUser;
 import com.atlassian.jira.web.bean.PagerFilter;
 import com.atlassian.templaterenderer.TemplateRenderer;
+import com.example.jira.helloworld.ProjectResponse;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -19,15 +22,13 @@ import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class MyPluginUserDetailServlet extends HttpServlet {
 
     private final UserSearchService userSearchService = ComponentAccessor.getComponent(UserSearchService.class);
-    private final ApplicationUser currentUser = ComponentAccessor.getJiraAuthenticationContext().getLoggedInUser();
-    private final JiraServiceContext serviceContext = new JiraServiceContextImpl(currentUser);
+    private final ApplicationUser adminUser = ComponentAccessor.getJiraAuthenticationContext().getLoggedInUser();
+    private final JiraServiceContext serviceContext = new JiraServiceContextImpl(adminUser);
     private final LoginService loginService = ComponentAccessor.getComponent(LoginService.class);
     private final SearchService searchService = ComponentAccessor.getComponent(SearchService.class);
     private final TemplateRenderer templateRenderer = ComponentAccessor.getOSGiComponentInstanceOfType(TemplateRenderer.class);
@@ -60,17 +61,17 @@ public class MyPluginUserDetailServlet extends HttpServlet {
             context.put("lastLogin", "Never");
         }
         try {
-            int assignedAll = countIssues("assignee = \"" + user.getUsername() + "\"", currentUser);
+            int assignedAll = countIssues("assignee = \"" + user.getUsername() + "\"", adminUser);
             context.put("assignedAllTime", assignedAll);
-            int assigned30Days = countIssues("assignee = \"" + user.getUsername() + "\" AND updated >= -30d", currentUser);
+            int assigned30Days = countIssues("assignee = \"" + user.getUsername() + "\" AND updated >= -30d", adminUser);
             context.put("assigned30", assigned30Days);
-            int resolvedAll = countIssues("assignee = \"" + user.getUsername() + "\" AND statusCategory = Done", currentUser);
+            int resolvedAll = countIssues("assignee = \"" + user.getUsername() + "\" AND statusCategory = Done", adminUser);
             context.put("resolvedAllTime", resolvedAll);
-            int resolved30Days = countIssues("assignee = \"" + user.getUsername() + "\" AND statusCategory = Done AND updated >= -30d", currentUser);
+            int resolved30Days = countIssues("assignee = \"" + user.getUsername() + "\" AND statusCategory = Done AND updated >= -30d", adminUser);
             context.put("resolved30", resolved30Days);
-            int createdAll = countIssues("reporter = \"" + user.getUsername() + "\"", currentUser);
+            int createdAll = countIssues("reporter = \"" + user.getUsername() + "\"", adminUser);
             context.put("createdAllTime", createdAll);
-            int created30Days = countIssues("reporter = \"" + user.getUsername() + "\" AND created >= -30d", currentUser);
+            int created30Days = countIssues("reporter = \"" + user.getUsername() + "\" AND created >= -30d", adminUser);
             context.put("created30", created30Days);
         }
         catch (Exception e) {
@@ -82,6 +83,12 @@ public class MyPluginUserDetailServlet extends HttpServlet {
         Collection<String> groups = ComponentAccessor.getGroupManager().getGroupNamesForUser(user);
         context.put("groups", groups);
         context.put("user", user);
+        context.put("isActive", adminUser.isActive() ? "Active" : "Inactive");
+        try {
+            context.put("projectsLast30Days", getProjectsForUserLast30Days(adminUser, user));
+        } catch (SearchException e) {
+            throw new ServletException("Error retrieving projects for user: " + user.getUsername(), e);
+        }
 
 
         resp.setContentType("text/html");
@@ -91,14 +98,32 @@ public class MyPluginUserDetailServlet extends HttpServlet {
     }
 
 
-    public int countIssues(String jql, ApplicationUser applicationUser) throws Exception {
-        SearchService.ParseResult parseResult = searchService.parseQuery(applicationUser, jql);
+    public int countIssues(String jql, ApplicationUser adminUser) throws Exception {
+        SearchService.ParseResult parseResult = searchService.parseQuery(adminUser, jql);
         if (!parseResult.isValid()) {
             throw new RuntimeException("Invalid JQL query: " + jql);
         }
-        SearchResults<?> searchResults = searchService.search(applicationUser, parseResult.getQuery(), PagerFilter.getUnlimitedFilter());
+        SearchResults<?> searchResults = searchService.search(adminUser, parseResult.getQuery(), PagerFilter.getUnlimitedFilter());
         return searchResults.getTotal();
 
+    }
+
+    public Set<ProjectResponse> getProjectsForUserLast30Days(ApplicationUser adminUser, ApplicationUser user) throws SearchException {
+        String jql = "(assignee = \"" + user.getUsername() + "\" OR reporter = \"" + user.getUsername() + "\") AND updated >= -30d";
+        SearchService.ParseResult parseResult = searchService.parseQuery(adminUser, jql);
+        if(parseResult.isValid()) {
+            SearchResults<Issue> results = searchService.search(adminUser, parseResult.getQuery(), PagerFilter.getUnlimitedFilter());
+            Set<ProjectResponse> projectResponses = new HashSet<>();
+            for(Issue issue : results.getResults()) {
+                ProjectResponse projectResponse = new ProjectResponse();
+                projectResponse.setKey(issue.getProjectObject().getKey());
+                projectResponse.setName(issue.getProjectObject().getName());
+                projectResponses.add(projectResponse);
+                System.out.println("Project: " + issue.getProjectObject().getKey() + ", Name: " + issue.getProjectObject().getName());
+            }
+            return projectResponses;
+        }
+        throw new SearchException("Invalid JQL query: " + jql);
     }
 
 }

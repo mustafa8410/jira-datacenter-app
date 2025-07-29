@@ -72,29 +72,6 @@ public class MyPluginDashboardServlet extends HttpServlet {
 //                LocalDateTime lastLogin = Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDateTime();
 //                lastLoginString = lastLogin.toString();
                 LocalDateTime lastLogin = Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDateTime();
-//                LocalDateTime today = LocalDateTime.now(ZoneId.systemDefault());
-//
-//                long daysAgo = ChronoUnit.DAYS.between(lastLogin, today);
-//                if(daysAgo == 0) {
-//                    long hoursAgo = ChronoUnit.HOURS.between(lastLogin, today);
-//                    if(hoursAgo == 0) {
-//                        long minutesAgo = ChronoUnit.MINUTES.between(lastLogin, today);
-//                        if(minutesAgo == 0) lastLoginString = "Just now";
-//                        else
-//                            lastLoginString = minutesAgo + " minutes ago";
-//                    }
-//                    else if (hoursAgo == 1)
-//                        lastLoginString = "1 hour ago";
-//                    else
-//                        lastLoginString = hoursAgo + " hours ago";
-//                }
-//
-//                else if(daysAgo == 1)
-//                    lastLoginString = "1 day ago";
-//                else if (daysAgo > 1)
-//                    lastLoginString = daysAgo + " days ago";
-//                else
-//                    lastLoginString = "Wrong data";
                 lastLoginString = getTimeString(lastLogin);
 
 
