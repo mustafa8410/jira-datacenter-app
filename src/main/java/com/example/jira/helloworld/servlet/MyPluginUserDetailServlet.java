@@ -9,10 +9,13 @@ import com.atlassian.jira.component.ComponentAccessor;
 import com.atlassian.jira.issue.Issue;
 import com.atlassian.jira.issue.search.SearchException;
 import com.atlassian.jira.issue.search.SearchResults;
+import com.atlassian.jira.project.Project;
+import com.atlassian.jira.security.roles.ProjectRoleManager;
 import com.atlassian.jira.user.ApplicationUser;
 import com.atlassian.jira.web.bean.PagerFilter;
 import com.atlassian.templaterenderer.TemplateRenderer;
 import com.example.jira.helloworld.ProjectResponse;
+import com.example.jira.helloworld.ProjectUserResponse;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -31,6 +34,7 @@ public class MyPluginUserDetailServlet extends HttpServlet {
     private final JiraServiceContext serviceContext = new JiraServiceContextImpl(adminUser);
     private final LoginService loginService = ComponentAccessor.getComponent(LoginService.class);
     private final SearchService searchService = ComponentAccessor.getComponent(SearchService.class);
+    private final ProjectRoleManager projectRoleManager = ComponentAccessor.getComponent(ProjectRoleManager.class);
     private final TemplateRenderer templateRenderer = ComponentAccessor.getOSGiComponentInstanceOfType(TemplateRenderer.class);
 
     @Override
@@ -83,7 +87,7 @@ public class MyPluginUserDetailServlet extends HttpServlet {
         Collection<String> groups = ComponentAccessor.getGroupManager().getGroupNamesForUser(user);
         context.put("groups", groups);
         context.put("user", user);
-        context.put("isActive", adminUser.isActive() ? "Active" : "Inactive");
+        context.put("isActive", user.isActive() ? "Active" : "Inactive");
         try {
             context.put("projectsLast30Days", getProjectsForUserLast30Days(adminUser, user));
         } catch (SearchException e) {
@@ -108,22 +112,36 @@ public class MyPluginUserDetailServlet extends HttpServlet {
 
     }
 
-    public Set<ProjectResponse> getProjectsForUserLast30Days(ApplicationUser adminUser, ApplicationUser user) throws SearchException {
+    public Set<ProjectUserResponse> getProjectsForUserLast30Days(ApplicationUser adminUser, ApplicationUser user) throws SearchException {
         String jql = "(assignee = \"" + user.getUsername() + "\" OR reporter = \"" + user.getUsername() + "\") AND updated >= -30d";
         SearchService.ParseResult parseResult = searchService.parseQuery(adminUser, jql);
         if(parseResult.isValid()) {
             SearchResults<Issue> results = searchService.search(adminUser, parseResult.getQuery(), PagerFilter.getUnlimitedFilter());
-            Set<ProjectResponse> projectResponses = new HashSet<>();
+            Set<ProjectUserResponse> projectResponses = new HashSet<>();
             for(Issue issue : results.getResults()) {
-                ProjectResponse projectResponse = new ProjectResponse();
-                projectResponse.setKey(issue.getProjectObject().getKey());
-                projectResponse.setName(issue.getProjectObject().getName());
+                ProjectUserResponse projectResponse = new ProjectUserResponse();
+                Project project = issue.getProjectObject();
+                projectResponse.setProjectKey(project.getKey());
+                projectResponse.setProjectName(project.getName());
+                projectResponse.setUserRoles(getUserRolesForProject(user, project));
+                projectResponse.setUserName(user.getUsername());
                 projectResponses.add(projectResponse);
-                System.out.println("Project: " + issue.getProjectObject().getKey() + ", Name: " + issue.getProjectObject().getName());
+//                System.out.println("Project: " + issue.getProjectObject().getKey() + ", Name: " + issue.getProjectObject().getName());
             }
             return projectResponses;
         }
         throw new SearchException("Invalid JQL query: " + jql);
     }
 
+    public List<String> getUserRolesForProject(ApplicationUser user, Project project) {
+        List<String> roles = new ArrayList<>();
+        if(project != null) {
+            projectRoleManager.getProjectRoles(user, project).forEach(role -> {
+                roles.add(role.getName());
+            });
+            return roles;
+        }
+        else
+            return Collections.emptyList();
+    }
 }

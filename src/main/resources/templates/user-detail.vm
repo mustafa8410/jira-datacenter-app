@@ -57,8 +57,19 @@
                     <ul class="list-group">
                         #foreach($project in $projectsLast30Days)
                             <li class="list-group-item clickable-li"
-                                data-href="/jira/projects/$project.key">
-                                $project.name - $project.key
+                                data-href="/jira/projects/$project.projectKey">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        $project.projectName - $project.projectKey
+                                    </div>
+                                    <div>
+                                        #foreach($role in $project.userRoles)
+                                            <span class="badge bg-secondary">$role</span>
+                                        #end
+                                    </div>
+                                </div>
+
+
                             </li>
                         #end
                     </ul>
