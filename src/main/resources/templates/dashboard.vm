@@ -29,10 +29,9 @@
                         </thead>
                         <tbody>
                             #foreach ($user in $users)
-                            <tr>
+                            <tr class="clickable-row" data-href="/jira/plugins/servlet/my-plugin-user-detail?username=$user.username">
                                 <td><input type="checkbox" class="user-checkbox" value="$user.username"></td>
-                                <!-- Username hücresi tıklanabilir ve user detail sayfasına gider -->
-                                <td class="clickable-row" data-href="/jira/plugins/servlet/my-plugin-user-detail?username=$user.username">$user.username</td>
+                                <td>$user.username</td>
                                 <td>$user.displayName</td>
                                 <td>$user.lastLogin</td>
                             </tr>
@@ -56,7 +55,7 @@
 <script>
     document.addEventListener("DOMContentLoaded", function () {
         // Username hücresine tıklanınca detay sayfasını yeni sekmede aç
-        document.querySelectorAll("td.clickable-row").forEach(cell => {
+        document.querySelectorAll("tr.clickable-row").forEach(cell => {
             cell.addEventListener("click", function () {
                 window.open(this.dataset.href, "_blank");
             });
