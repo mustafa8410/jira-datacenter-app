@@ -87,7 +87,7 @@ public class MyPluginUserDetailServlet extends HttpServlet {
         Collection<String> groups = ComponentAccessor.getGroupManager().getGroupNamesForUser(user);
         context.put("groups", groups);
         context.put("user", user);
-        context.put("isActive", user.isActive() ? "Active" : "Inactive");
+        context.put("isActive", groups.isEmpty() ? "Inactive" : "Active");
         try {
             context.put("projectsLast30Days", getProjectsForUserLast30Days(adminUser, user));
         } catch (SearchException e) {

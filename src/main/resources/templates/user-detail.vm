@@ -76,6 +76,25 @@
                 </div>
             </div>
 
+            <hr>
+            <div>
+                <form method="post" action="/jira/plugins/servlet/my-plugin-user-action" style="display:inline;">
+                    <input type="hidden" name="username" value="$user.username"/>
+                    <input type="hidden" name="action" value="deactivate"/>
+                    <button class="btn btn-warning" type="submit" onclick="return confirm('Deactivate this user?');">
+                        Remove from all groups (Deactivate)
+                    </button>
+                </form>
+                <form method="post" action="/jira/plugins/servlet/my-plugin-user-action" style="display:inline;">
+                    <input type="hidden" name="username" value="$user.username"/>
+                    <input type="hidden" name="action" value="remove-group"/>
+                    <button class="btn btn-danger" type="submit" onclick="return confirm('Revoke this user\'s license?');">
+                        Remove from jira-users (Revoke License)
+                    </button>
+                </form>
+            </div>
+
+
         </div>
     </div>
 </div>

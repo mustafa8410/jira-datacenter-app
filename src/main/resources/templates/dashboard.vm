@@ -8,7 +8,6 @@
         tr.clickable-row td:not(:first-child) {
             cursor: pointer;
         }
-        tr.selected-row { background-color: #e3f2fd; } /* checkbox seçiliyse satırın arka planı */
 
         .table td:first-child,
         .table th:first-child {
@@ -40,7 +39,7 @@
                         <tbody>
                             #foreach ($user in $users)
                             <tr class="clickable-row" data-href="/jira/plugins/servlet/my-plugin-user-detail?username=$user.username">
-                                <td><input type="checkbox" class="user-checkbox" value="$user.username"></td>
+                                <td class="checkbox-column"><input type="checkbox" class="user-checkbox" value="$user.username"></td>
                                 <td>$user.username</td>
                                 <td>$user.displayName</td>
                                 <td>$user.lastLogin</td>
@@ -66,14 +65,28 @@
     document.addEventListener("DOMContentLoaded", function () {
         document.querySelectorAll("tr.clickable-row").forEach(row => {
             row.addEventListener("click", function (e) {
-                // Don't trigger click if the checkbox (or its cell) was clicked
-                if (e.target.type === "checkbox" || e.target.closest("td").querySelector("input[type='checkbox']")) {
-                    e.stopPropagation();
+                const cb = this.querySelector("input.user-checkbox");
+
+                // If click is inside the first cell (checkbox area)
+                if (e.target.closest("td:first-child")) {
+                    // If the actual checkbox itself was clicked, do nothing (let browser handle it)
+                    if (e.target === cb) {
+                        e.stopPropagation(); // Just stop row navigation
+                        return;
+                    }
+
+                    // Otherwise, toggle checkbox manually (clicked outside the box but inside cell)
+                    cb.checked = !cb.checked;
+                    this.classList.toggle("selected-row", cb.checked);
+                    e.stopPropagation(); // Prevent row navigation
                     return;
                 }
+
+                // For clicks on other cells, open detail page
                 window.open(this.dataset.href, "_blank");
             });
         });
+
 
 
         // "Tümünü seç" checkbox'ı
