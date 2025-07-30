@@ -34,7 +34,7 @@
                             <th>Username</th>
                             <th>Display Name</th>
                             <th>Last Login</th>
-                            <th>Warnings</th> <!-- NEW COLUMN -->
+                            <th class="text-center">Warnings</th> <!-- NEW COLUMN -->
                         </tr>
                         </thead>
                         <tbody>
@@ -45,7 +45,7 @@
                                 <td>$user.username</td>
                                 <td>$user.displayName</td>
                                 <td>$user.lastLogin</td>
-                                <td>
+                                <td class="text-center">
                                     #if ($user.warnings && $user.warnings.size() > 0)
                                         <span class="text-warning" data-bs-toggle="tooltip" data-bs-html="true"
                                               title="<ul style='margin:0;padding:0;'>#foreach($w in $user.warnings)<li style='margin-left:-20px;'>$w</li>#end</ul>
