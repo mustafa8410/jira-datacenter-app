@@ -6,16 +6,10 @@ import com.atlassian.jira.bc.issue.search.SearchService;
 import com.atlassian.jira.bc.security.login.LoginService;
 import com.atlassian.jira.bc.user.search.UserSearchService;
 import com.atlassian.jira.component.ComponentAccessor;
-import com.atlassian.jira.issue.Issue;
 import com.atlassian.jira.issue.search.SearchException;
-import com.atlassian.jira.issue.search.SearchResults;
-import com.atlassian.jira.project.Project;
 import com.atlassian.jira.security.roles.ProjectRoleManager;
 import com.atlassian.jira.user.ApplicationUser;
-import com.atlassian.jira.web.bean.PagerFilter;
 import com.atlassian.templaterenderer.TemplateRenderer;
-import com.example.jira.helloworld.ProjectResponse;
-import com.example.jira.helloworld.ProjectUserResponse;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -26,6 +20,9 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.*;
+
+import static com.example.jira.helloworld.util.UserWarningUtil.countIssues;
+import static com.example.jira.helloworld.util.UserWarningUtil.getProjectsForUserLastGivenDays;
 
 public class MyPluginUserDetailServlet extends HttpServlet {
 
@@ -54,14 +51,13 @@ public class MyPluginUserDetailServlet extends HttpServlet {
         Map<String, Object> context = new HashMap<>();
 
         Long lastLoginMillis = loginService.getLoginInfo(user.getUsername()).getLastLoginTime();
-        if(lastLoginMillis != null) {
+        if (lastLoginMillis != null) {
             context.put("lastLogin",
                     MyPluginDashboardServlet.getTimeString(
                             LocalDateTime.ofInstant(Instant.ofEpochMilli(lastLoginMillis), ZoneId.systemDefault())
                     ));
 //        System.out.println("User: " + user.getUsername() + ", Last Login: " + context.get("lastLogin"));
-        }
-        else {
+        } else {
             context.put("lastLogin", "Never");
         }
         try {
@@ -77,8 +73,7 @@ public class MyPluginUserDetailServlet extends HttpServlet {
             context.put("createdAllTime", createdAll);
             int created30Days = countIssues("reporter = \"" + user.getUsername() + "\" AND created >= -30d", adminUser);
             context.put("created30", created30Days);
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             throw new ServletException("Error counting issues for user: " + user.getUsername(), e);
         }
 
@@ -89,7 +84,7 @@ public class MyPluginUserDetailServlet extends HttpServlet {
         context.put("user", user);
         context.put("isActive", groups.isEmpty() ? "Inactive" : "Active");
         try {
-            context.put("projectsLast30Days", getProjectsForUserLast30Days(adminUser, user));
+            context.put("projectsLast30Days", getProjectsForUserLastGivenDays(adminUser, user, 30));
         } catch (SearchException e) {
             throw new ServletException("Error retrieving projects for user: " + user.getUsername(), e);
         }
@@ -100,48 +95,7 @@ public class MyPluginUserDetailServlet extends HttpServlet {
 
 
     }
-
-
-    public int countIssues(String jql, ApplicationUser adminUser) throws Exception {
-        SearchService.ParseResult parseResult = searchService.parseQuery(adminUser, jql);
-        if (!parseResult.isValid()) {
-            throw new RuntimeException("Invalid JQL query: " + jql);
-        }
-        SearchResults<?> searchResults = searchService.search(adminUser, parseResult.getQuery(), PagerFilter.getUnlimitedFilter());
-        return searchResults.getTotal();
-
-    }
-
-    public Set<ProjectUserResponse> getProjectsForUserLast30Days(ApplicationUser adminUser, ApplicationUser user) throws SearchException {
-        String jql = "(assignee = \"" + user.getUsername() + "\" OR reporter = \"" + user.getUsername() + "\") AND updated >= -30d";
-        SearchService.ParseResult parseResult = searchService.parseQuery(adminUser, jql);
-        if(parseResult.isValid()) {
-            SearchResults<Issue> results = searchService.search(adminUser, parseResult.getQuery(), PagerFilter.getUnlimitedFilter());
-            Set<ProjectUserResponse> projectResponses = new HashSet<>();
-            for(Issue issue : results.getResults()) {
-                ProjectUserResponse projectResponse = new ProjectUserResponse();
-                Project project = issue.getProjectObject();
-                projectResponse.setProjectKey(project.getKey());
-                projectResponse.setProjectName(project.getName());
-                projectResponse.setUserRoles(getUserRolesForProject(user, project));
-                projectResponse.setUserName(user.getUsername());
-                projectResponses.add(projectResponse);
-//                System.out.println("Project: " + issue.getProjectObject().getKey() + ", Name: " + issue.getProjectObject().getName());
-            }
-            return projectResponses;
-        }
-        throw new SearchException("Invalid JQL query: " + jql);
-    }
-
-    public List<String> getUserRolesForProject(ApplicationUser user, Project project) {
-        List<String> roles = new ArrayList<>();
-        if(project != null) {
-            projectRoleManager.getProjectRoles(user, project).forEach(role -> {
-                roles.add(role.getName());
-            });
-            return roles;
-        }
-        else
-            return Collections.emptyList();
-    }
 }
+
+
+

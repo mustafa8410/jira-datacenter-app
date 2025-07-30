@@ -12,6 +12,7 @@ import com.atlassian.jira.user.UserPropertyManager;
 import com.atlassian.sal.api.user.UserManager;
 import com.atlassian.templaterenderer.TemplateRenderer;
 import com.example.jira.helloworld.UserRow;
+import com.example.jira.helloworld.util.UserWarningUtil;
 import jdk.vm.ci.meta.Local;
 
 import javax.servlet.ServletException;
@@ -76,7 +77,15 @@ public class MyPluginDashboardServlet extends HttpServlet {
 
 
             }
-            userRows.add(new UserRow(user.getUsername(), user.getDisplayName(), lastLoginString));
+            List<String> warnings;
+            try {
+                warnings = UserWarningUtil.getWarningsForUser(user, currentUser);
+            } catch (Exception e) {
+                resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to fetch warnings for user: " + e.getMessage());
+                warnings = Collections.emptyList();
+            }
+            System.out.println(warnings.toString());
+            userRows.add(new UserRow(user.getUsername(), user.getDisplayName(), lastLoginString, warnings));
         }
 
         Map<String, Object> contextMap = new HashMap<>();
