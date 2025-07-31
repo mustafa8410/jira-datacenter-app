@@ -36,8 +36,8 @@
             <p><strong>Last Login:</strong> $lastLogin</p>
             <p><strong>Jira Groups:</strong> #foreach($g in $groups)$g #if(!$velocityCount.equals($groups.size()))| #end #end</p>
             <hr>
-            <div class="d-flex justify-content-between">
-                <div>
+            <div class="row g-4 align-items-start">
+                <div class="col-md-3">
                     <h5>Activity (Last 30 Days)</h5>
                     <ul>
                         <li>Assigned: $assigned30</li>
@@ -52,7 +52,21 @@
                         <li>Created: $createdAllTime</li>
                     </ul>
                 </div>
-                <div>
+
+                <div class="col-md-5">
+                    #if($warnings && $warnings.size() > 0)
+                        <h5>Warnings:</h5>
+                        <div class="alert alert-warning shadow-sm" role="alert">
+                            <ul class="mb-0">
+                                #foreach($w in $warnings)
+                                    <li>$w</li>
+                                #end
+                            </ul>
+                        </div>
+                    #end
+                </div>
+
+                <div class="col-md-4">
                     <h5>Participated Projects (Last 30 Days)</h5>
                     <ul class="list-group">
                         #foreach($project in $projectsLast30Days)

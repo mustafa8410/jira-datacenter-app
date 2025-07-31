@@ -78,7 +78,6 @@ public class MyPluginDashboardServlet extends HttpServlet {
                 resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to fetch warnings for user: " + e.getMessage());
                 warnings = Collections.emptyList();
             }
-            System.out.println(warnings.toString());
             userRows.add(new UserRow(user.getUsername(), user.getDisplayName(), lastLoginString, warnings));
         }
 

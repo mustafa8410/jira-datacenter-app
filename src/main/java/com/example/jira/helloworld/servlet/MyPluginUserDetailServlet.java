@@ -8,6 +8,7 @@ import com.atlassian.jira.component.ComponentAccessor;
 import com.atlassian.jira.issue.search.SearchException;
 import com.atlassian.jira.user.ApplicationUser;
 import com.atlassian.templaterenderer.TemplateRenderer;
+import com.example.jira.helloworld.util.UserWarningUtil;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -70,7 +71,7 @@ public class MyPluginUserDetailServlet extends HttpServlet {
             int created30Days = countIssues("reporter = \"" + user.getUsername() + "\" AND created >= -30d", adminUser);
             context.put("created30", created30Days);
         } catch (Exception e) {
-            throw new ServletException("Error counting issues for user: " + user.getUsername(), e);
+            resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Error retrieving issue counts for user: " + user.getUsername());
         }
 
         // get the groups of the user
@@ -82,8 +83,16 @@ public class MyPluginUserDetailServlet extends HttpServlet {
         try {
             context.put("projectsLast30Days", getProjectsForUserLastGivenDays(adminUser, user, 30));
         } catch (SearchException e) {
-            throw new ServletException("Error retrieving projects for user: " + user.getUsername(), e);
+            resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Error retrieving projects for user: " + user.getUsername());
         }
+
+        List<String> warnings = new ArrayList<>();
+        try {
+            warnings = UserWarningUtil.getWarningsForUser(user, adminUser);
+        } catch (Exception e) {
+            resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Error retrieving warnings for user: " + user.getUsername());
+        }
+        context.put("warnings", warnings);
 
 
         resp.setContentType("text/html");
