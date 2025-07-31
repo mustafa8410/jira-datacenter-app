@@ -2,12 +2,10 @@ package com.example.jira.helloworld.servlet;
 
 import com.atlassian.jira.bc.JiraServiceContext;
 import com.atlassian.jira.bc.JiraServiceContextImpl;
-import com.atlassian.jira.bc.issue.search.SearchService;
 import com.atlassian.jira.bc.security.login.LoginService;
 import com.atlassian.jira.bc.user.search.UserSearchService;
 import com.atlassian.jira.component.ComponentAccessor;
 import com.atlassian.jira.issue.search.SearchException;
-import com.atlassian.jira.security.roles.ProjectRoleManager;
 import com.atlassian.jira.user.ApplicationUser;
 import com.atlassian.templaterenderer.TemplateRenderer;
 
@@ -30,8 +28,6 @@ public class MyPluginUserDetailServlet extends HttpServlet {
     private final ApplicationUser adminUser = ComponentAccessor.getJiraAuthenticationContext().getLoggedInUser();
     private final JiraServiceContext serviceContext = new JiraServiceContextImpl(adminUser);
     private final LoginService loginService = ComponentAccessor.getComponent(LoginService.class);
-    private final SearchService searchService = ComponentAccessor.getComponent(SearchService.class);
-    private final ProjectRoleManager projectRoleManager = ComponentAccessor.getComponent(ProjectRoleManager.class);
     private final TemplateRenderer templateRenderer = ComponentAccessor.getOSGiComponentInstanceOfType(TemplateRenderer.class);
 
     @Override

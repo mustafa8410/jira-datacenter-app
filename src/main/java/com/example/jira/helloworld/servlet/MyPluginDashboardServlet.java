@@ -7,13 +7,10 @@ import com.atlassian.jira.bc.security.login.LoginService;
 import com.atlassian.jira.bc.user.search.UserSearchService;
 import com.atlassian.jira.component.ComponentAccessor;
 import com.atlassian.jira.user.ApplicationUser;
-import com.atlassian.jira.user.UserDetails;
 import com.atlassian.jira.user.UserPropertyManager;
-import com.atlassian.sal.api.user.UserManager;
 import com.atlassian.templaterenderer.TemplateRenderer;
 import com.example.jira.helloworld.UserRow;
 import com.example.jira.helloworld.util.UserWarningUtil;
-import jdk.vm.ci.meta.Local;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -21,14 +18,11 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.time.Instant;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 
-import static java.lang.Long.parseLong;
-import static java.time.LocalTime.now;
 
 public class MyPluginDashboardServlet extends HttpServlet {
 

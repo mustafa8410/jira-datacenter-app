@@ -8,9 +8,7 @@ import com.atlassian.jira.exception.PermissionException;
 import com.atlassian.jira.exception.RemoveException;
 import com.atlassian.jira.security.groups.GroupManager;
 import com.atlassian.jira.user.ApplicationUser;
-import com.atlassian.jira.user.UserUtils;
 import com.atlassian.jira.user.util.UserUtil;
-import com.atlassian.sal.api.user.UserManager;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -25,7 +23,6 @@ public class MyPluginUserActionServlet extends HttpServlet {
     private final GroupManager groupManager = ComponentAccessor.getComponent(GroupManager.class);
     private final UserSearchService userSearchService = ComponentAccessor.getComponent(UserSearchService.class);
     private final UserUtil userUtil = ComponentAccessor.getComponent(UserUtil.class);
-    private final UserManager userManager = ComponentAccessor.getComponent(UserManager.class);
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
