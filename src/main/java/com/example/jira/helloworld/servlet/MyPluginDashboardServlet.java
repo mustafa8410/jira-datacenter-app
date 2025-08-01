@@ -111,11 +111,11 @@ public class MyPluginDashboardServlet extends HttpServlet {
 
 
 
-        UserPropertyManager userPropertyManager = ComponentAccessor.getUserPropertyManager();
+//        UserPropertyManager userPropertyManager = ComponentAccessor.getUserPropertyManager();
         List<UserRow> userRows = new ArrayList<>();
 
 
-        for(ApplicationUser user: users) {
+        for(ApplicationUser user: users.subList(start, end)) {
             String lastLoginString = "Never";
 
 
