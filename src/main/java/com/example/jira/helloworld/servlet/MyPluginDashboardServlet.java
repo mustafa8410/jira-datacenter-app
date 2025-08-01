@@ -33,6 +33,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 
+
 public class MyPluginDashboardServlet extends HttpServlet {
 
     private final TemplateRenderer templateRenderer = ComponentAccessor.getOSGiComponentInstanceOfType(TemplateRenderer.class);
@@ -54,52 +55,9 @@ public class MyPluginDashboardServlet extends HttpServlet {
             return;
         }
 
-        String jiraBaseUrl = ComponentAccessor.getApplicationProperties().getString("jira.baseurl");
-        if (jiraBaseUrl == null || jiraBaseUrl.isEmpty()) {
-            resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Jira base URL is not configured");
-            return;
-        }
-//        String restUrl = jiraBaseUrl + "/rest/api/2/users/search?startAt=" + page + "&maxResults=" + pageSize;
-//        HttpClient httpClient = HttpClient.newBuilder().build();
-//        HttpRequest.Builder requestBuilder = HttpRequest.newBuilder().uri(URI.create(restUrl)).header("Accept", "application/json");
-//
-//        String sessionId = null;
-//        for(Cookie cookie : req.getCookies()) {
-//            if("JSESSIONID".equals(cookie.getName())) {
-//                sessionId = cookie.getValue();
-//                break;
-//            }
-//        }
-//
-//        if(sessionId != null) {
-//            requestBuilder.header("Cookie", "JSESSIONID=" + sessionId);
-//        } else {
-//            resp.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Session ID not found in cookies");
-//            return;
-//        }
-//
-//        HttpRequest httpRequest = requestBuilder.GET().build();
-//
-//        HttpResponse<String> response = null;
-//        try {
-//            response = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofString());
-//        } catch (InterruptedException e) {
-//            resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to fetch user data: " + e.getMessage());
-//        }
-//        if (response == null || response.statusCode() != 200) {
-//            resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to fetch user data: " + (response != null ? response.body() : "No response"));
-//            return;
-//        }
-//        String responseBody = response.body();
-//        ObjectMapper objectMapper = new ObjectMapper();
-//        List<JiraUser> users = objectMapper.readValue(responseBody, new TypeReference<List<JiraUser>>(){});
-//
 
-
-
-
-        ApplicationUser currentUser = ComponentAccessor.getJiraAuthenticationContext().getLoggedInUser();
-        JiraServiceContext context = new JiraServiceContextImpl(currentUser);
+        ApplicationUser adminUser = ComponentAccessor.getJiraAuthenticationContext().getLoggedInUser();
+        JiraServiceContext context = new JiraServiceContextImpl(adminUser);
         List<ApplicationUser> users = ComponentAccessor.getComponent(UserSearchService.class).findUsersAllowEmptyQuery(context, "");
 
         int start = (page - 1) * pageSize;
@@ -111,48 +69,8 @@ public class MyPluginDashboardServlet extends HttpServlet {
 
 
 
-//        UserPropertyManager userPropertyManager = ComponentAccessor.getUserPropertyManager();
-        List<UserRow> userRows = new ArrayList<>();
+        List<UserRow> userRows = createUserRows(users.subList(start, end), adminUser);
 
-
-        for(ApplicationUser user: users.subList(start, end)) {
-            String lastLoginString = "Never";
-
-
-
-            // placeholder for now because apparently jira is written by middle schoolers, thus can't fetch a simple property
-            // userPropertyManager.getPropertySet(user).setString("login.lastLoginMillis", String.valueOf(System.currentTimeMillis()));
-
-//            String loginMillisString  = userPropertyManager.getPropertySet(user).getString("login.lastLoginMillis");
-            LoginInfo loginInfo = loginService.getLoginInfo(user.getName());
-            Long millis = loginInfo.getLastLoginTime();
-//            System.out.println(
-//                    "User: " + user.getUsername() +
-//                            ", userKey: " + user.getKey() +
-//                            ", id: " + user.getId() +
-//                            ", directoryId: " + user.getDirectoryId()
-//            );
-//
-//            System.out.println("Last Login Millis: " + loginMillisString);
-//            if(loginMillisString != null && !loginMillisString.isEmpty()) {
-            if(millis != null) {
-//                Long millis = Long.parseLong(loginMillisString);
-//                LocalDateTime lastLogin = Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDateTime();
-//                lastLoginString = lastLogin.toString();
-                LocalDateTime lastLogin = Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDateTime();
-                lastLoginString = getTimeString(lastLogin);
-
-
-            }
-            List<String> warnings;
-            try {
-                warnings = UserWarningUtil.getWarningsForUser(user, currentUser);
-            } catch (Exception e) {
-                resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to fetch warnings for user: " + e.getMessage());
-                warnings = Collections.emptyList();
-            }
-            userRows.add(new UserRow(user.getName(), user.getDisplayName(), lastLoginString, warnings));
-        }
 
         Map<String, Object> contextMap = new HashMap<>();
         contextMap.put("users", userRows);
@@ -194,4 +112,88 @@ public class MyPluginDashboardServlet extends HttpServlet {
 
     }
 
+    public List<UserRow> createUserRows(List<ApplicationUser> users, ApplicationUser adminUser) {
+        List<UserRow> userRows = new ArrayList<>();
+        for (ApplicationUser user : users) {
+            String lastLoginString = "Never";
+            LoginInfo loginInfo = loginService.getLoginInfo(user.getName());
+            Long millis = loginInfo.getLastLoginTime();
+
+            if (millis != null) {
+                LocalDateTime lastLogin = Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDateTime();
+                lastLoginString = getTimeString(lastLogin);
+            }
+            List<String> warnings;
+            try {
+                warnings = UserWarningUtil.getWarningsForUser(user, adminUser);
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to fetch warnings for user: " + e.getMessage(), e);
+            }
+            userRows.add(new UserRow(user.getName(), user.getDisplayName(), lastLoginString, warnings));
+        }
+        return userRows;
+    }
+
+    public List<UserRow> getUsersFromServlet(HttpServletRequest req, HttpServletResponse resp, int page, int pageSize, ApplicationUser adminUser)
+            throws InterruptedException, IOException {
+        String jiraBaseUrl = ComponentAccessor.getApplicationProperties().getString("jira.baseurl");
+        if (jiraBaseUrl == null || jiraBaseUrl.isEmpty()) {
+            throw new IllegalStateException("Jira base URL is not configured");
+        }
+        String restUrl = jiraBaseUrl + "/rest/api/2/users/search?startAt=" + page + "&maxResults=" + pageSize;
+        HttpClient httpClient = HttpClient.newBuilder().build();
+        HttpRequest.Builder requestBuilder = HttpRequest.newBuilder().uri(URI.create(restUrl)).header("Accept", "application/json");
+
+        String sessionId = null;
+        for(Cookie cookie : req.getCookies()) {
+            if("JSESSIONID".equals(cookie.getName())) {
+                sessionId = cookie.getValue();
+                break;
+            }
+        }
+
+        if(sessionId != null) {
+            requestBuilder.header("Cookie", "JSESSIONID=" + sessionId);
+        } else {
+            throw new IllegalStateException("JSESSIONID cookie not found in request");
+        }
+
+        HttpRequest httpRequest = requestBuilder.GET().build();
+
+        HttpResponse<String> response = null;
+        response = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+        if (response == null || response.statusCode() != 200) {
+            throw new IOException("Failed to fetch users from Jira REST API. Status code: " + (response != null ? response.statusCode() : "null"));
+        }
+        String responseBody = response.body();
+        ObjectMapper objectMapper = new ObjectMapper();
+        List<JiraUser> users = objectMapper.readValue(responseBody, new TypeReference<List<JiraUser>>(){});
+        UserPropertyManager userPropertyManager = ComponentAccessor.getUserPropertyManager();
+
+        List<UserRow> userRows = new ArrayList<>();
+        for(JiraUser jiraUser : users) {
+            String lastLoginString = "Never";
+            ApplicationUser user = ComponentAccessor.getUserManager().getUserByKey(jiraUser.getKey());
+            LoginInfo loginInfo = ComponentAccessor.getComponent(LoginService.class).getLoginInfo(jiraUser.getName());
+            Long millis = loginInfo.getLastLoginTime();
+
+            if(millis != null) {
+                LocalDateTime lastLogin = Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDateTime();
+                lastLoginString = getTimeString(lastLogin);
+            }
+            List<String> warnings;
+            try {
+                warnings = UserWarningUtil.getWarningsForUser(user, adminUser);
+            } catch (Exception e) {
+                resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to fetch warnings for user: " + e.getMessage());
+                warnings = Collections.emptyList();
+            }
+            userRows.add(new UserRow(user.getName(), user.getDisplayName(), lastLoginString, warnings));
+
+        }
+        return userRows;
+    }
+
+
 }
+
