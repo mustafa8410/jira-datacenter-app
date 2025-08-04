@@ -193,7 +193,20 @@
                     <form id="bulkForm" method="post" action="/jira/plugins/servlet/bulk-action"></form>
 
                     <div class="mt-3 text-end">
-                        <button class="btn btn-outline-primary" onclick="getSelectedUsernames()">Show Selected</button>
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                Bulk Action
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li>
+                                    <a class="dropdown-item" href="#" onclick="return bulkAction('deactivate')">Deactivate Users</a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="#" onclick="return bulkAction('remove-group')">Revoke License (Remove from Group)</a>
+                                </li>
+                                <!-- You can add more actions here -->
+                            </ul>
+                        </div>
                         <button class="btn btn-outline-danger ms-2" onclick="clearAllSelections()">Clear Selections</button>
                     </div>
 
@@ -333,13 +346,22 @@
     }
 
     // --- Bulk action: submit selected usernames across all pages ---
-    function getSelectedUsernames() {
+    function bulkAction(action) {
+        if (selectedUsers.size === 0) {
+            alert("Please select at least one user.");
+            return false; // prevent default
+        }
+        // Confirm action
+        let confirmMsg = "";
+        if (action === 'deactivate') confirmMsg = "Are you sure you want to deactivate the selected users?";
+        if (action === 'remove-group') confirmMsg = "Are you sure you want to revoke licenses (remove from group) for selected users?";
+        // Add more cases if needed
+
+        if (!confirm(confirmMsg)) return false;
+
+        // Submit form with action
         const form = document.getElementById("bulkForm");
         form.innerHTML = "";
-        if (selectedUsers.size === 0) {
-            alert("Lütfen en az bir kullanıcı seçin.");
-            return;
-        }
         selectedUsers.forEach(username => {
             const input = document.createElement("input");
             input.type = "hidden";
@@ -347,8 +369,18 @@
             input.value = username;
             form.appendChild(input);
         });
+        // Add action as hidden field
+        const actionInput = document.createElement("input");
+        actionInput.type = "hidden";
+        actionInput.name = "action";
+        actionInput.value = action;
+        form.appendChild(actionInput);
+
         form.submit();
+        clearAllSelections();
+        return false; // prevent default dropdown link behavior
     }
+
 
     // --- Jump to page ---
     function jumpToPage(totalPages, pageSize) {

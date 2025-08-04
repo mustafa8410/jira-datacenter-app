@@ -66,7 +66,7 @@
     </servlet>
 
     <servlet name="Bulk Action Servlet" key="bulk-action-servlet" class="com.example.jira.helloworld.servlet.BulkActionServlet">
-        <url-pattern>/plugins/servlet/bulk-action</url-pattern>
+        <url-pattern>/bulk-action</url-pattern>
     </servlet>
 
     <servlet name="User Admin Action" key="my-plugin-user-action-servlet" class="com.example.jira.helloworld.servlet.MyPluginUserActionServlet">
