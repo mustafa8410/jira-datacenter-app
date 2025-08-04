@@ -1,31 +1,26 @@
 package com.example.jira.helloworld.servlet;
 
+import com.atlassian.crowd.embedded.api.Group;
 import com.atlassian.jira.bc.JiraServiceContext;
 import com.atlassian.jira.bc.JiraServiceContextImpl;
 import com.atlassian.jira.bc.security.login.LoginInfo;
 import com.atlassian.jira.bc.security.login.LoginService;
-import com.atlassian.jira.bc.user.UserService;
-import com.atlassian.jira.bc.user.search.UserSearchService;
 import com.atlassian.jira.component.ComponentAccessor;
+import com.atlassian.jira.security.JiraAuthenticationContext;
+import com.atlassian.jira.security.groups.GroupManager;
 import com.atlassian.jira.user.ApplicationUser;
-import com.atlassian.jira.user.UserPropertyManager;
+import com.atlassian.jira.util.Page;
+import com.atlassian.jira.util.PageRequest;
+import com.atlassian.jira.util.PageRequests;
 import com.atlassian.templaterenderer.TemplateRenderer;
-import com.example.jira.helloworld.JiraUser;
 import com.example.jira.helloworld.UserRow;
 import com.example.jira.helloworld.util.UserWarningUtil;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.type.TypeReference;
 
 import javax.servlet.ServletException;
-import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -38,6 +33,11 @@ public class MyPluginDashboardServlet extends HttpServlet {
 
     private final TemplateRenderer templateRenderer = ComponentAccessor.getOSGiComponentInstanceOfType(TemplateRenderer.class);
     private final LoginService loginService = ComponentAccessor.getComponent(LoginService.class);
+    private final GroupManager groupManager = ComponentAccessor.getComponent(GroupManager.class);
+    private final JiraAuthenticationContext jiraAuthenticationContext = ComponentAccessor.getComponent(JiraAuthenticationContext.class);
+    private final ApplicationUser adminUser = jiraAuthenticationContext.getLoggedInUser();
+    private final JiraServiceContext context = new JiraServiceContextImpl(adminUser);
+
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
@@ -55,21 +55,26 @@ public class MyPluginDashboardServlet extends HttpServlet {
             return;
         }
 
-
-        ApplicationUser adminUser = ComponentAccessor.getJiraAuthenticationContext().getLoggedInUser();
-        JiraServiceContext context = new JiraServiceContextImpl(adminUser);
-        List<ApplicationUser> users = ComponentAccessor.getComponent(UserSearchService.class).findUsersAllowEmptyQuery(context, "");
+        Group softwareUsersGroup = groupManager.getGroup("jira-software-users");
+        int userCount = groupManager.getUsersInGroupCount(softwareUsersGroup);
 
         int start = (page - 1) * pageSize;
-        int end = Math.min(start + pageSize, users.size());
-        if (start >= users.size()) {
+        int end = Math.min(start + pageSize, userCount);
+        if (start >= userCount) {
+            resp.sendError(HttpServletResponse.SC_NOT_FOUND, "No users found for the specified page");
+            return;
+        }
+
+        PageRequest pageRequest = PageRequests.request((long) start, pageSize);
+        Page<ApplicationUser> usersPage = groupManager.getUsersInGroup("jira-software-users", true, pageRequest);
+
+        if (usersPage == null || usersPage.getValues().isEmpty()) {
             resp.sendError(HttpServletResponse.SC_NOT_FOUND, "No users found for the specified page");
             return;
         }
 
 
-
-        List<UserRow> userRows = createUserRows(users.subList(start, end), adminUser);
+        List<UserRow> userRows = createUserRows(usersPage.getValues(), adminUser);
 
 
         Map<String, Object> contextMap = new HashMap<>();
@@ -77,7 +82,7 @@ public class MyPluginDashboardServlet extends HttpServlet {
         contextMap.put("currentPage", page);
         contextMap.put("pageSize", pageSize);
 
-        int totalPages = (int) Math.ceil(users.size() / (double) pageSize);
+        int totalPages = (int) Math.ceil(userCount / (double) pageSize);
         contextMap.put("totalPages", totalPages);
 
         // render the template defined with .vm file
@@ -130,66 +135,6 @@ public class MyPluginDashboardServlet extends HttpServlet {
                 throw new RuntimeException("Failed to fetch warnings for user: " + e.getMessage(), e);
             }
             userRows.add(new UserRow(user.getName(), user.getDisplayName(), lastLoginString, warnings));
-        }
-        return userRows;
-    }
-
-    public List<UserRow> getUsersFromServlet(HttpServletRequest req, HttpServletResponse resp, int page, int pageSize, ApplicationUser adminUser)
-            throws InterruptedException, IOException {
-        String jiraBaseUrl = ComponentAccessor.getApplicationProperties().getString("jira.baseurl");
-        if (jiraBaseUrl == null || jiraBaseUrl.isEmpty()) {
-            throw new IllegalStateException("Jira base URL is not configured");
-        }
-        String restUrl = jiraBaseUrl + "/rest/api/2/users/search?startAt=" + page + "&maxResults=" + pageSize;
-        HttpClient httpClient = HttpClient.newBuilder().build();
-        HttpRequest.Builder requestBuilder = HttpRequest.newBuilder().uri(URI.create(restUrl)).header("Accept", "application/json");
-
-        String sessionId = null;
-        for(Cookie cookie : req.getCookies()) {
-            if("JSESSIONID".equals(cookie.getName())) {
-                sessionId = cookie.getValue();
-                break;
-            }
-        }
-
-        if(sessionId != null) {
-            requestBuilder.header("Cookie", "JSESSIONID=" + sessionId);
-        } else {
-            throw new IllegalStateException("JSESSIONID cookie not found in request");
-        }
-
-        HttpRequest httpRequest = requestBuilder.GET().build();
-
-        HttpResponse<String> response = null;
-        response = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofString());
-        if (response == null || response.statusCode() != 200) {
-            throw new IOException("Failed to fetch users from Jira REST API. Status code: " + (response != null ? response.statusCode() : "null"));
-        }
-        String responseBody = response.body();
-        ObjectMapper objectMapper = new ObjectMapper();
-        List<JiraUser> users = objectMapper.readValue(responseBody, new TypeReference<List<JiraUser>>(){});
-        UserPropertyManager userPropertyManager = ComponentAccessor.getUserPropertyManager();
-
-        List<UserRow> userRows = new ArrayList<>();
-        for(JiraUser jiraUser : users) {
-            String lastLoginString = "Never";
-            ApplicationUser user = ComponentAccessor.getUserManager().getUserByKey(jiraUser.getKey());
-            LoginInfo loginInfo = ComponentAccessor.getComponent(LoginService.class).getLoginInfo(jiraUser.getName());
-            Long millis = loginInfo.getLastLoginTime();
-
-            if(millis != null) {
-                LocalDateTime lastLogin = Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDateTime();
-                lastLoginString = getTimeString(lastLogin);
-            }
-            List<String> warnings;
-            try {
-                warnings = UserWarningUtil.getWarningsForUser(user, adminUser);
-            } catch (Exception e) {
-                resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to fetch warnings for user: " + e.getMessage());
-                warnings = Collections.emptyList();
-            }
-            userRows.add(new UserRow(user.getName(), user.getDisplayName(), lastLoginString, warnings));
-
         }
         return userRows;
     }
