@@ -193,8 +193,10 @@
                     <form id="bulkForm" method="post" action="/jira/plugins/servlet/bulk-action"></form>
 
                     <div class="mt-3 text-end">
-                        <button class="btn btn-outline-primary" onclick="getSelectedUsernames()">Seçilenleri Göster</button>
+                        <button class="btn btn-outline-primary" onclick="getSelectedUsernames()">Show Selected</button>
+                        <button class="btn btn-outline-danger ms-2" onclick="clearAllSelections()">Clear Selections</button>
                     </div>
+
                 </div>
             </div>
         </div>
@@ -204,39 +206,89 @@
 <!-- JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+    // --- Maintain selection state globally ---
+    let selectedUsers = new Set(JSON.parse(localStorage.getItem('selectedUsers') || '[]'));
+
+    function updateLocalStorage() {
+        localStorage.setItem('selectedUsers', JSON.stringify(Array.from(selectedUsers)));
+    }
+
+    // Restore checkbox state on page load
+    function restoreCheckboxes() {
+        document.querySelectorAll(".user-checkbox").forEach(cb => {
+            if (selectedUsers.has(cb.value)) {
+                cb.checked = true;
+                cb.closest("tr").classList.add("selected-row");
+            } else {
+                cb.checked = false;
+                cb.closest("tr").classList.remove("selected-row");
+            }
+        });
+        // Update the "select all" checkbox status
+        const allOnPage = Array.from(document.querySelectorAll(".user-checkbox"));
+        const allChecked = allOnPage.length > 0 && allOnPage.every(cb => selectedUsers.has(cb.value));
+        document.getElementById("select-all").checked = allChecked;
+    }
+
     document.addEventListener("DOMContentLoaded", function () {
+        // --- Clickable row handler ---
         document.querySelectorAll("tr.clickable-row").forEach(row => {
             row.addEventListener("click", function (e) {
                 const cb = this.querySelector("input.user-checkbox");
                 if (e.target.closest("td:first-child")) {
                     if (e.target === cb) { e.stopPropagation(); return; }
                     cb.checked = !cb.checked;
-                    this.classList.toggle("selected-row", cb.checked);
+                    cb.dispatchEvent(new Event('change')); // trigger our own handler
                     e.stopPropagation(); return;
                 }
                 window.open(this.dataset.href, "_blank");
             });
         });
 
+        // --- Tooltips ---
         const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
         tooltipTriggerList.forEach(el => new bootstrap.Tooltip(el));
 
+        // --- Restore selection state ---
+        restoreCheckboxes();
+
+        // --- "Select all" checkbox handler ---
         document.getElementById("select-all").addEventListener("change", function () {
+            const check = this.checked;
             document.querySelectorAll(".user-checkbox").forEach(cb => {
-                cb.checked = this.checked;
-                cb.closest("tr").classList.toggle("selected-row", this.checked);
+                cb.checked = check;
+                cb.closest("tr").classList.toggle("selected-row", check);
+                if (check) {
+                    selectedUsers.add(cb.value);
+                } else {
+                    selectedUsers.delete(cb.value);
+                }
             });
+            updateLocalStorage();
         });
 
+        // --- Individual checkbox handler ---
         document.querySelectorAll(".user-checkbox").forEach(cb => {
             cb.addEventListener("change", function () {
+                if (this.checked) {
+                    selectedUsers.add(this.value);
+                } else {
+                    selectedUsers.delete(this.value);
+                }
+                updateLocalStorage();
                 this.closest("tr").classList.toggle("selected-row", this.checked);
+
+                // Update "select all" status for the page
+                const allOnPage = Array.from(document.querySelectorAll(".user-checkbox"));
+                document.getElementById("select-all").checked = allOnPage.length > 0 && allOnPage.every(cb => cb.checked);
             });
         });
 
+        // --- Inline search handler ---
         document.getElementById("searchInput").addEventListener("input", filterUsers);
     });
 
+    // --- Filter table rows by search ---
     function filterUsers() {
         const searchValue = document.getElementById("searchInput").value.toLowerCase();
         const rows = document.querySelectorAll(".table tbody tr");
@@ -248,6 +300,7 @@
         });
     }
 
+    // --- Filters for "never logged in", "inactive 30 days", etc. ---
     function applyFilters() {
         const filterNever = document.getElementById("filterNever").checked;
         const filterInactive30 = document.getElementById("filterInactive30").checked;
@@ -266,11 +319,12 @@
 
             if (filterNever && lastLoginText.toLowerCase() !== "never") visible = false;
             if (filterInactive30 && lastLoginText.toLowerCase() !== "never") {
+                // Filtering not accurate unless backend provides a date; left as placeholder
                 const loginDate = new Date(lastLoginText);
                 if (!isNaN(loginDate) && loginDate > thirtyDaysAgo) visible = false;
             }
             if (filterNoProjects) {
-                visible = false; // gerçek değer geldikçe backend'den değiştirirsin
+                visible = false; // Backend needs to provide this
             }
             if (filterWarnings && !hasWarning) visible = false;
 
@@ -278,16 +332,15 @@
         });
     }
 
+    // --- Bulk action: submit selected usernames across all pages ---
     function getSelectedUsernames() {
         const form = document.getElementById("bulkForm");
         form.innerHTML = "";
-        const selected = Array.from(document.querySelectorAll(".user-checkbox:checked"))
-            .map(cb => cb.value);
-        if (selected.length === 0) {
+        if (selectedUsers.size === 0) {
             alert("Lütfen en az bir kullanıcı seçin.");
             return;
         }
-        selected.forEach(username => {
+        selectedUsers.forEach(username => {
             const input = document.createElement("input");
             input.type = "hidden";
             input.name = "selectedUsers";
@@ -297,6 +350,7 @@
         form.submit();
     }
 
+    // --- Jump to page ---
     function jumpToPage(totalPages, pageSize) {
         var input = document.getElementById("jumpToPage");
         var page = parseInt(input.value, 10);
@@ -310,6 +364,13 @@
         window.location.href = "?page=" + page + "&pageSize=" + pageSize;
     }
 
+    function clearAllSelections() {
+        selectedUsers.clear();
+        updateLocalStorage();
+        restoreCheckboxes();
+    }
+
 </script>
+
 </body>
 </html>

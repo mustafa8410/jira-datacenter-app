@@ -59,7 +59,7 @@ public class MyPluginDashboardServlet extends HttpServlet {
         int userCount = groupManager.getUsersInGroupCount(softwareUsersGroup);
 
         int start = (page - 1) * pageSize;
-        int end = Math.min(start + pageSize, userCount);
+        // int end = Math.min(start + pageSize, userCount);
         if (start >= userCount) {
             resp.sendError(HttpServletResponse.SC_NOT_FOUND, "No users found for the specified page");
             return;
