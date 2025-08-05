@@ -18,14 +18,15 @@ import java.io.IOException;
 
 public class MyPluginUserActionServlet extends HttpServlet {
 
-    private final ApplicationUser adminUser = ComponentAccessor.getJiraAuthenticationContext().getLoggedInUser();
-    private final JiraServiceContext serviceContext = new JiraServiceContextImpl(adminUser);
+
     private final GroupManager groupManager = ComponentAccessor.getComponent(GroupManager.class);
     private final UserSearchService userSearchService = ComponentAccessor.getComponent(UserSearchService.class);
     private final UserUtil userUtil = ComponentAccessor.getComponent(UserUtil.class);
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        final ApplicationUser adminUser = ComponentAccessor.getJiraAuthenticationContext().getLoggedInUser();
+        final JiraServiceContext serviceContext = new JiraServiceContextImpl(adminUser);
         String action = req.getParameter("action");
         String username = req.getParameter("username");
         if(!groupManager.isUserInGroup(adminUser, groupManager.getGroup("jira-administrators"))) {

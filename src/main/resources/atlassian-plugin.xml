@@ -73,6 +73,11 @@
         <url-pattern>/my-plugin-user-action</url-pattern>
     </servlet>
 
+    <servlet name="Revoke Inactive 90 Servlet" key="revoke-inactive-90-servlet" class="com.example.jira.helloworld.servlet.RevokeInactive90Servlet">
+        <url-pattern>/revoke-inactive-90</url-pattern>
+    </servlet>
+
+
 
 
 

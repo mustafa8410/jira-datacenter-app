@@ -26,13 +26,14 @@ import static com.example.jira.helloworld.util.UserWarningUtil.getProjectsForUse
 public class MyPluginUserDetailServlet extends HttpServlet {
 
     private final UserSearchService userSearchService = ComponentAccessor.getComponent(UserSearchService.class);
-    private final ApplicationUser adminUser = ComponentAccessor.getJiraAuthenticationContext().getLoggedInUser();
-    private final JiraServiceContext serviceContext = new JiraServiceContextImpl(adminUser);
+
     private final LoginService loginService = ComponentAccessor.getComponent(LoginService.class);
     private final TemplateRenderer templateRenderer = ComponentAccessor.getOSGiComponentInstanceOfType(TemplateRenderer.class);
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        final ApplicationUser adminUser = ComponentAccessor.getJiraAuthenticationContext().getLoggedInUser();
+        final JiraServiceContext serviceContext = new JiraServiceContextImpl(adminUser);
         String username = req.getParameter("username");
         if (username == null || username.isEmpty()) {
             resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Username parameter is required");

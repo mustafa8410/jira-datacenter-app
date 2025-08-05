@@ -35,12 +35,10 @@ public class MyPluginDashboardServlet extends HttpServlet {
     private final LoginService loginService = ComponentAccessor.getComponent(LoginService.class);
     private final GroupManager groupManager = ComponentAccessor.getComponent(GroupManager.class);
     private final JiraAuthenticationContext jiraAuthenticationContext = ComponentAccessor.getComponent(JiraAuthenticationContext.class);
-    private final ApplicationUser adminUser = jiraAuthenticationContext.getLoggedInUser();
-    private final JiraServiceContext context = new JiraServiceContextImpl(adminUser);
-
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        final ApplicationUser adminUser = jiraAuthenticationContext.getLoggedInUser();
 
         resp.setContentType("text/html");
 

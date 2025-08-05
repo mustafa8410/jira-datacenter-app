@@ -22,14 +22,15 @@ import java.util.List;
 @WebServlet("/plugins/servlet/bulk-action")
 public class BulkActionServlet extends HttpServlet {
 
-    private final ApplicationUser adminUser = ComponentAccessor.getJiraAuthenticationContext().getLoggedInUser();
-    private final JiraServiceContext serviceContext = new JiraServiceContextImpl(adminUser);
+
     private final GroupManager groupManager = ComponentAccessor.getComponent(GroupManager.class);
     private final UserUtil userUtil = ComponentAccessor.getComponent(UserUtil.class);
     private final UserSearchService userSearchService = ComponentAccessor.getComponent(UserSearchService.class);
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
+        final ApplicationUser adminUser = ComponentAccessor.getJiraAuthenticationContext().getLoggedInUser();
+        final JiraServiceContext serviceContext = new JiraServiceContextImpl(adminUser);
 
         if(!groupManager.isUserInGroup(adminUser, "jira-administrators")) {
             resp.sendError(HttpServletResponse.SC_FORBIDDEN, "You do not have permission to perform this action");
