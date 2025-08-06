@@ -410,27 +410,17 @@
 
     function revokeInactive90() {
         if (!confirm("Are you sure you want to revoke licenses for ALL users inactive for 90 days or more? This cannot be undone.")) return;
-        // Optional: show spinner/loading here
 
-        // Submit to a dedicated servlet endpoint
-        fetch('/jira/plugins/servlet/revoke-inactive-90', { method: 'POST' })
-                .then(response => {
-                    if (!response.ok) {
-                        // Try to get the text of the error (HTML), or set your own message
-                        return response.text().then(text => {
-                            throw new Error("Bulk revoke failed: " + (text || response.status));
-                        });
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    alert(data.message + "\n\nUsernames:\n" + (data.removedUsers || []).join("\n"));
-                })
-                .catch(err => {
-                    alert("Error: " + err.message);
-                });
-
+        // Open the result in a new tab by submitting a form
+        const form = document.createElement("form");
+        form.method = "POST";
+        form.action = "/jira/plugins/servlet/revoke-inactive-90";
+        form.target = "_blank";
+        document.body.appendChild(form);
+        form.submit();
+        document.body.removeChild(form);
     }
+
 
 
 </script>

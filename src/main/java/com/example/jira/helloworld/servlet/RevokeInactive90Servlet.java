@@ -19,6 +19,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -33,7 +34,7 @@ public class RevokeInactive90Servlet extends HttpServlet {
     private final GroupManager groupManager = ComponentAccessor.getComponent(GroupManager.class);
     private final UserUtil userUtil = ComponentAccessor.getComponent(UserUtil.class);
     private final int batchSize = 500;
-    private final int inactivityThresholdDays = 90;
+    private final int inactivityThresholdDays = 4;
     private final Group softwareUsersGroup = groupManager.getGroup("jira-software-users");
 
 
@@ -41,11 +42,7 @@ public class RevokeInactive90Servlet extends HttpServlet {
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         final ApplicationUser adminUser = ComponentAccessor.getJiraAuthenticationContext().getLoggedInUser();
         if (adminUser == null || !groupManager.isUserInGroup(adminUser, "jira-administrators")) {
-            resp.setStatus(HttpServletResponse.SC_FORBIDDEN);
-            resp.setContentType("application/json");
-            Map<String, Object> result = new HashMap<>();
-            result.put("error", "You do not have permission to perform this action");
-            new ObjectMapper().writeValue(resp.getWriter(), result);
+            resp.sendError(HttpServletResponse.SC_FORBIDDEN, "You must be an administrator to perform this action.");
             return;
         }
 
@@ -81,16 +78,29 @@ public class RevokeInactive90Servlet extends HttpServlet {
             }
         }
 
-        ObjectMapper mapper = new ObjectMapper();
-        Map<String, Object> result = new HashMap<>();
-        result.put("message", "Done. Users affected: " + removedUsers.size());
-        result.put("count", removedUsers.size());
-        result.put("removedUsers", removedUsers);
-        if(!failedUsers.isEmpty()) {
-            result.put("failedUsers", failedUsers);
+        resp.setContentType("text/html");
+        resp.getWriter().write("<html><body> Revoke Inactive Users Action Completed.<br/>");
+        resp.getWriter().write("Removed Users: " + removedUsers.size() + "<br/>");
+        if (!removedUsers.isEmpty()) {
+            resp.getWriter().write("<ul>");
+            for (String username : removedUsers) {
+                resp.getWriter().write("<li>" + username + "</li>");
+            }
+            resp.getWriter().write("</ul>");
+        } else {
+            resp.getWriter().write("No users were removed.<br/>");
         }
-        resp.setContentType("application/json");
-        mapper.writeValue(resp.getWriter(), result);
+        resp.getWriter().write("Failed Users: " + failedUsers.size() + "<br/>");
+        if (!failedUsers.isEmpty()) {
+            resp.getWriter().write("<ul>");
+            for (String error : failedUsers) {
+                resp.getWriter().write("<li>" + error + "</li>");
+            }
+            resp.getWriter().write("</ul>");
+        } else {
+            resp.getWriter().write("No users failed to remove.<br/>");
+        }
+        resp.getWriter().write("</body></html>");
 
     }
 }
