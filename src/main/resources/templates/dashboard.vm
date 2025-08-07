@@ -260,7 +260,7 @@
                     cb.dispatchEvent(new Event('change')); // trigger our own handler
                     e.stopPropagation(); return;
                 }
-                window.open(this.dataset.href, "_blank");
+                window.location.href = this.dataset.href;
             });
         });
 
@@ -411,11 +411,9 @@
     function revokeInactive90() {
         if (!confirm("Are you sure you want to revoke licenses for ALL users inactive for 90 days or more? This cannot be undone.")) return;
 
-        // Open the result in a new tab by submitting a form
         const form = document.createElement("form");
         form.method = "POST";
         form.action = "/jira/plugins/servlet/revoke-inactive-90";
-        form.target = "_blank";
         document.body.appendChild(form);
         form.submit();
         document.body.removeChild(form);
