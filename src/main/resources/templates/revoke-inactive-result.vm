@@ -1,0 +1,51 @@
+## templates/revoke-inactive-result.vm
+
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Revoke Inactive Users - Result</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+<div class="container my-5">
+    <div class="card shadow-sm">
+        <div class="card-header bg-danger text-white">
+            <h4 class="mb-0">Revoke Inactive Users (90+ Days)</h4>
+        </div>
+        <div class="card-body">
+            <p class="mb-3">
+                <strong>Total Users Removed:</strong>
+                <span class="badge bg-success">$removedUsers.size()</span>
+            </p>
+            #if($removedUsers.size() > 0)
+                <ul class="list-group mb-3">
+                    #foreach($username in $removedUsers)
+                        <li class="list-group-item">$username</li>
+                    #end
+                </ul>
+            #else
+                <div class="alert alert-info">No users were removed.</div>
+            #end
+
+            <hr/>
+
+            <p class="mt-3">
+                <strong>Failed Removals:</strong>
+                <span class="badge bg-warning text-dark">$failedUsers.size()</span>
+            </p>
+            #if($failedUsers.size() > 0)
+                <ul class="list-group mb-3">
+                    #foreach($error in $failedUsers)
+                        <li class="list-group-item text-danger">$error</li>
+                    #end
+                </ul>
+            #else
+                <div class="alert alert-success">No users failed to remove.</div>
+            #end
+
+            <a href="/jira/plugins/servlet/my-plugin-dashboard" class="btn btn-primary mt-4">Back to Dashboard</a>
+        </div>
+    </div>
+</div>
+</body>
+</html>

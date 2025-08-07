@@ -12,6 +12,7 @@ import com.atlassian.jira.user.ApplicationUser;
 import com.atlassian.jira.user.util.UserUtil;
 import com.atlassian.jira.util.Page;
 import com.atlassian.jira.util.PageRequests;
+import com.atlassian.templaterenderer.TemplateRenderer;
 import org.codehaus.jackson.map.ObjectMapper;
 
 import javax.servlet.ServletException;
@@ -34,8 +35,9 @@ public class RevokeInactive90Servlet extends HttpServlet {
     private final GroupManager groupManager = ComponentAccessor.getComponent(GroupManager.class);
     private final UserUtil userUtil = ComponentAccessor.getComponent(UserUtil.class);
     private final int batchSize = 500;
-    private final int inactivityThresholdDays = 4;
+    private final int inactivityThresholdDays = 90;
     private final Group softwareUsersGroup = groupManager.getGroup("jira-software-users");
+    private final TemplateRenderer templateRenderer = ComponentAccessor.getOSGiComponentInstanceOfType(TemplateRenderer.class);
 
 
     @Override
@@ -78,29 +80,36 @@ public class RevokeInactive90Servlet extends HttpServlet {
             }
         }
 
+//        resp.setContentType("text/html");
+//        resp.getWriter().write("<html><body> Revoke Inactive Users Action Completed.<br/>");
+//        resp.getWriter().write("Removed Users: " + removedUsers.size() + "<br/>");
+//        if (!removedUsers.isEmpty()) {
+//            resp.getWriter().write("<ul>");
+//            for (String username : removedUsers) {
+//                resp.getWriter().write("<li>" + username + "</li>");
+//            }
+//            resp.getWriter().write("</ul>");
+//        } else {
+//            resp.getWriter().write("No users were removed.<br/>");
+//        }
+//        resp.getWriter().write("Failed Users: " + failedUsers.size() + "<br/>");
+//        if (!failedUsers.isEmpty()) {
+//            resp.getWriter().write("<ul>");
+//            for (String error : failedUsers) {
+//                resp.getWriter().write("<li>" + error + "</li>");
+//            }
+//            resp.getWriter().write("</ul>");
+//        } else {
+//            resp.getWriter().write("No users failed to remove.<br/>");
+//        }
+//        resp.getWriter().write("</body></html>");
+
+        Map<String, Object> context = new HashMap<>();
+        context.put("removedUsers", removedUsers);
+        context.put("failedUsers", failedUsers);
+
         resp.setContentType("text/html");
-        resp.getWriter().write("<html><body> Revoke Inactive Users Action Completed.<br/>");
-        resp.getWriter().write("Removed Users: " + removedUsers.size() + "<br/>");
-        if (!removedUsers.isEmpty()) {
-            resp.getWriter().write("<ul>");
-            for (String username : removedUsers) {
-                resp.getWriter().write("<li>" + username + "</li>");
-            }
-            resp.getWriter().write("</ul>");
-        } else {
-            resp.getWriter().write("No users were removed.<br/>");
-        }
-        resp.getWriter().write("Failed Users: " + failedUsers.size() + "<br/>");
-        if (!failedUsers.isEmpty()) {
-            resp.getWriter().write("<ul>");
-            for (String error : failedUsers) {
-                resp.getWriter().write("<li>" + error + "</li>");
-            }
-            resp.getWriter().write("</ul>");
-        } else {
-            resp.getWriter().write("No users failed to remove.<br/>");
-        }
-        resp.getWriter().write("</body></html>");
+        templateRenderer.render("templates/revoke-inactive-result.vm", context, resp.getWriter());
 
     }
 }

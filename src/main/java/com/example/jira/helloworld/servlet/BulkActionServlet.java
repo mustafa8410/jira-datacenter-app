@@ -9,6 +9,7 @@ import com.atlassian.jira.exception.RemoveException;
 import com.atlassian.jira.security.groups.GroupManager;
 import com.atlassian.jira.user.ApplicationUser;
 import com.atlassian.jira.user.util.UserUtil;
+import com.atlassian.templaterenderer.TemplateRenderer;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -17,7 +18,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @WebServlet("/plugins/servlet/bulk-action")
 public class BulkActionServlet extends HttpServlet {
@@ -26,6 +29,7 @@ public class BulkActionServlet extends HttpServlet {
     private final GroupManager groupManager = ComponentAccessor.getComponent(GroupManager.class);
     private final UserUtil userUtil = ComponentAccessor.getComponent(UserUtil.class);
     private final UserSearchService userSearchService = ComponentAccessor.getComponent(UserSearchService.class);
+    private final TemplateRenderer templateRenderer = ComponentAccessor.getOSGiComponentInstanceOfType(TemplateRenderer.class);
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
@@ -78,12 +82,18 @@ public class BulkActionServlet extends HttpServlet {
             }
         }
 
+//        resp.setContentType("text/html");
+//        resp.getWriter().write("<html><body>Action " + action + " performed successfully on selected users.<br/>");
+//        for(ApplicationUser user : users) {
+//            resp.getWriter().write("User: " + user.getDisplayName() + "<br/>");
+//        }
+//        resp.getWriter().write("<a href=\"/jira/plugins/servlet//my-plugin-dashboard\">Go back to Dashboard</a></body></html>");
+
         resp.setContentType("text/html");
-        resp.getWriter().write("<html><body>Action " + action + " performed successfully on selected users.<br/>");
-        for(ApplicationUser user : users) {
-            resp.getWriter().write("User: " + user.getDisplayName() + "<br/>");
-        }
-        resp.getWriter().write("<a href=\"/jira/plugins/servlet//my-plugin-dashboard\">Go back to Dashboard</a></body></html>");
+        Map<String, Object> context = new HashMap<>();
+        context.put("action", action);
+        context.put("users", users);
+        templateRenderer.render("templates/bulk-action-result.vm", context, resp.getWriter());
 
     }
 }

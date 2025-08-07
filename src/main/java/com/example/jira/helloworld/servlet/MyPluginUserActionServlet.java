@@ -9,12 +9,15 @@ import com.atlassian.jira.exception.RemoveException;
 import com.atlassian.jira.security.groups.GroupManager;
 import com.atlassian.jira.user.ApplicationUser;
 import com.atlassian.jira.user.util.UserUtil;
+import com.atlassian.templaterenderer.TemplateRenderer;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 public class MyPluginUserActionServlet extends HttpServlet {
 
@@ -22,6 +25,7 @@ public class MyPluginUserActionServlet extends HttpServlet {
     private final GroupManager groupManager = ComponentAccessor.getComponent(GroupManager.class);
     private final UserSearchService userSearchService = ComponentAccessor.getComponent(UserSearchService.class);
     private final UserUtil userUtil = ComponentAccessor.getComponent(UserUtil.class);
+    private final TemplateRenderer templateRenderer = ComponentAccessor.getOSGiComponentInstanceOfType(TemplateRenderer.class);
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
@@ -65,10 +69,13 @@ public class MyPluginUserActionServlet extends HttpServlet {
             return;
         }
 
+        Map<String, Object> context = new HashMap<>();
+        context.put("action", action);
+        context.put("user", user);
+
         resp.setStatus(HttpServletResponse.SC_OK);
         resp.setContentType("text/html");
-        resp.getWriter().write("<html><body>Action " + action + " performed successfully on user " + username + ".<br/>");
-        resp.getWriter().write("<a href=\"/jira/plugins/servlet/my-plugin-user-detail?username=" + username + "\">Back to user</a></body></html>");
+        templateRenderer.render("templates/user-action-result.vm", context, resp.getWriter());
 
     }
 }
