@@ -56,14 +56,14 @@ public class MyPluginUserActionServlet extends HttpServlet {
                 return;
             }
         }
-        else if(action.equals("deactivate")) {
-            try {
-                userUtil.removeUserFromGroups(groupManager.getGroupsForUser(user.getUsername()), user);
-            } catch (PermissionException | RemoveException e) {
-                resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to deactivate user: " + e.getMessage());
-                return;
-            }
-        }
+//        else if(action.equals("deactivate")) {
+//            try {
+//                userUtil.removeUserFromGroups(groupManager.getGroupsForUser(user.getUsername()), user);
+//            } catch (PermissionException | RemoveException e) {
+//                resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to deactivate user: " + e.getMessage());
+//                return;
+//            }
+//        }
         else {
             resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid action parameter");
             return;

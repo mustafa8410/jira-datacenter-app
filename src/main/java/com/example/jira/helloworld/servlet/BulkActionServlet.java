@@ -71,15 +71,18 @@ public class BulkActionServlet extends HttpServlet {
             }
         }
 
-        if(action.equals("deactivate")) {
-            for(ApplicationUser currentUser: users) {
-                try {
-                    userUtil.removeUserFromGroups(groupManager.getGroupsForUser(currentUser.getUsername()), currentUser);
-                } catch (PermissionException | RemoveException e) {
-                    resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to deactivate user: " + e.getMessage());
-                    return;
-                }
-            }
+//        else if(action.equals("deactivate")) {
+//            for(ApplicationUser currentUser: users) {
+//                try {
+//                    userUtil.removeUserFromGroups(groupManager.getGroupsForUser(currentUser.getUsername()), currentUser);
+//                } catch (PermissionException | RemoveException e) {
+//                    resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to deactivate user: " + e.getMessage());
+//                    return;
+//                }
+//            }
+//        }
+        else {
+            resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Unsupported action: " + action);
         }
 
 //        resp.setContentType("text/html");

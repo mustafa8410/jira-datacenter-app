@@ -202,9 +202,9 @@
                                     Bulk Action
                                 </button>
                                 <ul class="dropdown-menu">
-                                    <li>
-                                        <a class="dropdown-item" href="#" onclick="return bulkAction('deactivate')">Deactivate Users</a>
-                                    </li>
+##                                    <li>
+##                                        <a class="dropdown-item" href="#" onclick="return bulkAction('deactivate')">Deactivate Users</a>
+##                                    </li>
                                     <li>
                                         <a class="dropdown-item" href="#" onclick="return bulkAction('remove-group')">Revoke License (Remove from Group)</a>
                                     </li>
@@ -359,7 +359,7 @@
         }
         // Confirm action
         let confirmMsg = "";
-        if (action === 'deactivate') confirmMsg = "Are you sure you want to deactivate the selected users?";
+        // if (action === 'deactivate') confirmMsg = "Are you sure you want to deactivate the selected users?";
         if (action === 'remove-group') confirmMsg = "Are you sure you want to revoke licenses (remove from group) for selected users?";
         // Add more cases if needed
 
