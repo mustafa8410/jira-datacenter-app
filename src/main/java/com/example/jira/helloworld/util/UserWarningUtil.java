@@ -34,18 +34,24 @@ public class UserWarningUtil {
             warnings.add("Never logged in: This user has never logged in.");
             return warnings;
         }
-        // no license
-        if(!groupManager.isUserInGroup(applicationUser, groupManager.getGroup("jira-software-users"))) {
-            warnings.add("No Jira license: This user is not in the jira-software-users group.");
-            // inactive
-            if(groupManager.getGroupsForUser(applicationUser).isEmpty())
-                warnings.add("User is not in any group: This user is inactive and cannot log in or access anything.");
-        }
-        // admin has no license
-        if (groupManager.isUserInGroup(applicationUser, groupManager.getGroup("jira-administrators"))
-                && !groupManager.isUserInGroup(applicationUser, groupManager.getGroup("jira-software-users"))) {
-            warnings.add("Admin but no Jira license: User is in administrators group but not in jira-software-users.");
-        }
+//        // no license
+//        if(!groupManager.isUserInGroup(applicationUser, groupManager.getGroup("jira-software-users"))) {
+//            warnings.add("No Jira license: This user is not in the jira-software-users group.");
+//            // inactive
+//            if(groupManager.getGroupsForUser(applicationUser).isEmpty())
+//                warnings.add("User is not in any group: This user is inactive and cannot log in or access anything.");
+//        }
+
+
+//        // admin has no license
+//        if (groupManager.isUserInGroup(applicationUser, groupManager.getGroup("jira-administrators"))
+//                && !groupManager.isUserInGroup(applicationUser, groupManager.getGroup("jira-software-users"))) {
+//            warnings.add("Admin but no Jira license: User is in administrators group but not in jira-software-users.");
+//        }
+
+        // inactive
+        if(!applicationUser.isActive())
+            warnings.add("Inactive user: This user is inactive and cannot log in or access anything.");
 
         // inactive user with issues assigned
         if(groupManager.getGroupNamesForUser(applicationUser).isEmpty()
