@@ -1,10 +1,10 @@
 package com.example.jira.helloworld.servlet;
 
 import com.atlassian.crowd.embedded.api.Group;
-import com.atlassian.jira.bc.JiraServiceContext;
-import com.atlassian.jira.bc.JiraServiceContextImpl;
+import com.atlassian.jira.bc.group.GroupService;
 import com.atlassian.jira.bc.security.login.LoginInfo;
 import com.atlassian.jira.bc.security.login.LoginService;
+import com.atlassian.jira.bc.user.search.UserSearchService;
 import com.atlassian.jira.component.ComponentAccessor;
 import com.atlassian.jira.security.JiraAuthenticationContext;
 import com.atlassian.jira.security.groups.GroupManager;
@@ -13,6 +13,7 @@ import com.atlassian.jira.util.Page;
 import com.atlassian.jira.util.PageRequest;
 import com.atlassian.jira.util.PageRequests;
 import com.atlassian.templaterenderer.TemplateRenderer;
+import com.atlassian.velocity.VelocityManager;
 import com.example.jira.helloworld.UserRow;
 import com.example.jira.helloworld.util.UserWarningUtil;
 
@@ -28,19 +29,18 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 
-
 public class MyPluginDashboardServlet extends HttpServlet {
 
     private final TemplateRenderer templateRenderer = ComponentAccessor.getOSGiComponentInstanceOfType(TemplateRenderer.class);
     private final LoginService loginService = ComponentAccessor.getComponent(LoginService.class);
     private final GroupManager groupManager = ComponentAccessor.getComponent(GroupManager.class);
     private final JiraAuthenticationContext jiraAuthenticationContext = ComponentAccessor.getComponent(JiraAuthenticationContext.class);
+    private final VelocityManager velocityManager = ComponentAccessor.getComponent(VelocityManager.class);
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         final ApplicationUser adminUser = jiraAuthenticationContext.getLoggedInUser();
 
-        resp.setContentType("text/html");
 
         int page = req.getParameter("page") != null ? Integer.parseInt(req.getParameter("page")) : 1;
         if (page < 1) {
@@ -79,12 +79,16 @@ public class MyPluginDashboardServlet extends HttpServlet {
         contextMap.put("users", userRows);
         contextMap.put("currentPage", page);
         contextMap.put("pageSize", pageSize);
+        contextMap.put("contextPath", req.getContextPath());
 
         int totalPages = (int) Math.ceil(userCount / (double) pageSize);
         contextMap.put("totalPages", totalPages);
 
         // render the template defined with .vm file
-        templateRenderer.render("templates/dashboard.vm", contextMap, resp.getWriter());
+        resp.setContentType("text/html;charset=UTF-8");
+//        templateRenderer.render("templates/dashboard.vm", contextMap, resp.getWriter());
+        String html = velocityManager.getEncodedBody("", "templates/dashboard.vm", "UTF-8", contextMap);
+        resp.getWriter().write(html);
     }
 
     public static String getTimeString(LocalDateTime lastLogin) {

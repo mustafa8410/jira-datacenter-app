@@ -7,7 +7,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.example.jira</groupId>
     <artifactId>helloWorld</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.0.6</version>
 
     <organization>
         <name>Example Company</name>
@@ -170,7 +170,7 @@
     </build>
 
     <properties>
-        <jira.version>9.12.2</jira.version>
+        <jira.version>9.12.25</jira.version>
         <amps.version>9.1.1</amps.version>
         <plugin.testrunner.version>2.0.9</plugin.testrunner.version>
         <osgi.javaconfig.version>0.2.0</osgi.javaconfig.version>

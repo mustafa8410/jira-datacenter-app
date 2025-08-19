@@ -27,7 +27,7 @@
                     <li class="list-group-item">$user.displayName <span class="text-muted">($user.username)</span></li>
                 #end
             </ul>
-            <a href="/jira/plugins/servlet/my-plugin-dashboard" class="btn btn-primary">Back to Dashboard</a>
+            <a href="$contextPath/plugins/servlet/my-plugin-dashboard" class="btn btn-primary">Back to Dashboard</a>
         </div>
     </div>
 </div>

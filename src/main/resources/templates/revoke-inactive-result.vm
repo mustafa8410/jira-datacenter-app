@@ -43,7 +43,7 @@
                 <div class="alert alert-success">No users failed to remove.</div>
             #end
 
-            <a href="/jira/plugins/servlet/my-plugin-dashboard" class="btn btn-primary mt-4">Back to Dashboard</a>
+            <a href="$contextPath/plugins/servlet/my-plugin-dashboard" class="btn btn-primary mt-4">Back to Dashboard</a>
         </div>
     </div>
 </div>

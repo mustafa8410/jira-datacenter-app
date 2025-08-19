@@ -8,6 +8,7 @@ import com.atlassian.jira.component.ComponentAccessor;
 import com.atlassian.jira.issue.search.SearchException;
 import com.atlassian.jira.user.ApplicationUser;
 import com.atlassian.templaterenderer.TemplateRenderer;
+import com.atlassian.velocity.VelocityManager;
 import com.example.jira.helloworld.util.UserWarningUtil;
 
 import javax.servlet.ServletException;
@@ -29,6 +30,7 @@ public class MyPluginUserDetailServlet extends HttpServlet {
 
     private final LoginService loginService = ComponentAccessor.getComponent(LoginService.class);
     private final TemplateRenderer templateRenderer = ComponentAccessor.getOSGiComponentInstanceOfType(TemplateRenderer.class);
+    private final VelocityManager velocityManager = ComponentAccessor.getComponent(VelocityManager.class);
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
@@ -80,7 +82,7 @@ public class MyPluginUserDetailServlet extends HttpServlet {
         Collection<String> groups = ComponentAccessor.getGroupManager().getGroupNamesForUser(user);
         context.put("groups", groups);
         context.put("user", user);
-        context.put("isActive", groups.isEmpty() ? "Inactive" : "Active");
+        context.put("isActive", user.isActive() ? "Active" : "Inactive");
         try {
             context.put("projectsLast30Days", getProjectsForUserLastGivenDays(adminUser, user, 30));
         } catch (SearchException e) {
@@ -94,11 +96,13 @@ public class MyPluginUserDetailServlet extends HttpServlet {
             resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Error retrieving warnings for user: " + user.getUsername());
         }
         context.put("warnings", warnings);
+        context.put("contextPath", req.getContextPath());
 
 
-        resp.setContentType("text/html");
-        templateRenderer.render("templates/user-detail.vm", context, resp.getWriter());
-
+        resp.setContentType("text/html;charset=UTF-8");
+//        templateRenderer.render("templates/user-detail.vm", context, resp.getWriter());
+        String html = velocityManager.getEncodedBody("", "templates/user-detail.vm", "UTF-8", context);
+        resp.getWriter().write(html);
 
     }
 }

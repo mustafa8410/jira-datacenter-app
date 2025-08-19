@@ -1,6 +1,9 @@
+## (Optional if you rely on contexts)
+## $webResourceManager.requireResource("YOUR_PLUGIN_KEY:helloWorld-resources")
+
 <div>
     <strong>Hello from my plugin!</strong><br/>
-    <a href="/jira/plugins/servlet/my-plugin-dashboard" target="_blank">
-        <button type="button">Go to Plugin Dashboard</button>
+    <a id="myLink" class="aui-button aui-button-primary" target="_blank" rel="noopener">
+        Go to Plugin Dashboard
     </a>
 </div>

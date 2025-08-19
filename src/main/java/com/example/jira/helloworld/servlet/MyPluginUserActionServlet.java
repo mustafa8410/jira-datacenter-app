@@ -72,6 +72,7 @@ public class MyPluginUserActionServlet extends HttpServlet {
         Map<String, Object> context = new HashMap<>();
         context.put("action", action);
         context.put("user", user);
+        context.put("contextPath", req.getContextPath());
 
         resp.setStatus(HttpServletResponse.SC_OK);
         resp.setContentType("text/html");

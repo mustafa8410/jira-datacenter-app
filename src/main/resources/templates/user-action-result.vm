@@ -28,8 +28,8 @@
                 <span class="text-muted">($user.username)</span>
             </p>
             <div class="alert alert-success">Action <strong>$action</strong> performed successfully on <strong>$user.displayName</strong>.</div>
-            <a href="/jira/plugins/servlet/my-plugin-user-detail?username=$user.username" class="btn btn-outline-primary me-2">Back to User</a>
-            <a href="/jira/plugins/servlet/my-plugin-dashboard" class="btn btn-primary">Back to Dashboard</a>
+            <a href="$contextPath/plugins/servlet/my-plugin-user-detail?username=$user.username" class="btn btn-outline-primary me-2">Back to User</a>
+            <a href="$contextPath/plugins/servlet/my-plugin-dashboard" class="btn btn-primary">Back to Dashboard</a>
         </div>
     </div>
 </div>

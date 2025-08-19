@@ -107,6 +107,7 @@ public class RevokeInactive90Servlet extends HttpServlet {
         Map<String, Object> context = new HashMap<>();
         context.put("removedUsers", removedUsers);
         context.put("failedUsers", failedUsers);
+        context.put("contextPath", req.getContextPath());
 
         resp.setContentType("text/html");
         templateRenderer.render("templates/revoke-inactive-result.vm", context, resp.getWriter());

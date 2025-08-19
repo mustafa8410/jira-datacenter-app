@@ -96,6 +96,7 @@ public class BulkActionServlet extends HttpServlet {
         Map<String, Object> context = new HashMap<>();
         context.put("action", action);
         context.put("users", users);
+        context.put("contextPath", req.getContextPath());
         templateRenderer.render("templates/bulk-action-result.vm", context, resp.getWriter());
 
     }

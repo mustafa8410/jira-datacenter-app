@@ -13,20 +13,24 @@
     <!-- add our web resources -->
     <web-resource key="helloWorld-resources" name="helloWorld Web Resources">
         <dependency>com.atlassian.auiplugin:ajs</dependency>
+<!--        <dependency>com.atlassian.plugins.atlassian-plugins-webresource-plugin:context-path</dependency>-->
         
         <resource type="download" name="helloWorld.css" location="/css/helloWorld.css"/>
         <resource type="download" name="helloWorld.js" location="/js/helloWorld.js"/>
         <resource type="download" name="images/" location="/images"/>
 
-        <context>helloWorld</context>
+<!--        <context>jira.view.issue</context>-->
+        <context>atl.general</context>
+<!--        <context>helloWorld</context>-->
     </web-resource>
 
-    <!-- Add a simple panel on the Jira issue view -->
-    <web-panel key="hello-world-panel" location="atl.jira.view.issue.right.context" weight="100">
+    <web-panel key="hello-world-panel"
+               location="atl.jira.view.issue.right.context"
+               weight="100">
         <resource name="view" type="velocity" location="/templates/helloworld.vm"/>
     </web-panel>
 
-<!--    <web-section key="my-plugin-admin-section" location="system.admin/globalsettings" weight="100">-->
+    <!--    <web-section key="my-plugin-admin-section" location="system.admin/globalsettings" weight="100">-->
 <!--        <label>My Plugin</label>-->
 
 <!--    </web-section>-->
