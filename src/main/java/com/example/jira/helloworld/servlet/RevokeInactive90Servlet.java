@@ -13,6 +13,7 @@ import com.atlassian.jira.user.util.UserUtil;
 import com.atlassian.jira.util.Page;
 import com.atlassian.jira.util.PageRequests;
 import com.atlassian.templaterenderer.TemplateRenderer;
+import com.atlassian.velocity.VelocityManager;
 import org.codehaus.jackson.map.ObjectMapper;
 
 import javax.servlet.ServletException;
@@ -25,10 +26,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class RevokeInactive90Servlet extends HttpServlet {
     private final LoginService loginService = ComponentAccessor.getComponent(LoginService.class);
@@ -38,13 +36,19 @@ public class RevokeInactive90Servlet extends HttpServlet {
     private final int inactivityThresholdDays = 90;
     private final Group softwareUsersGroup = groupManager.getGroup("jira-software-users");
     private final TemplateRenderer templateRenderer = ComponentAccessor.getOSGiComponentInstanceOfType(TemplateRenderer.class);
+    private final VelocityManager velocityManager = ComponentAccessor.getComponent(VelocityManager.class);
 
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         final ApplicationUser adminUser = ComponentAccessor.getJiraAuthenticationContext().getLoggedInUser();
-        if (adminUser == null || !groupManager.isUserInGroup(adminUser, "jira-administrators")) {
-            resp.sendError(HttpServletResponse.SC_FORBIDDEN, "You must be an administrator to perform this action.");
+
+        Set<String> adminGroups = new HashSet<>();
+        adminGroups.add("jira-administrators");
+        adminGroups.add("administrators");
+        adminGroups.add("system-administrators");
+        if(!groupManager.isUserInGroups(adminUser, adminGroups)) {
+            resp.sendError(HttpServletResponse.SC_FORBIDDEN, "You do not have permission to perform this action");
             return;
         }
 
@@ -109,8 +113,10 @@ public class RevokeInactive90Servlet extends HttpServlet {
         context.put("failedUsers", failedUsers);
         context.put("contextPath", req.getContextPath());
 
-        resp.setContentType("text/html");
-        templateRenderer.render("templates/revoke-inactive-result.vm", context, resp.getWriter());
+        resp.setContentType("text/html; charset=UTF-8");
+//        templateRenderer.render("templates/revoke-inactive-result.vm", context, resp.getWriter());
+        String html = velocityManager.getEncodedBody("", "templates/revoke-inactive-result.vm", "UTF-8", context);
+        resp.getWriter().write(html);
 
     }
 }

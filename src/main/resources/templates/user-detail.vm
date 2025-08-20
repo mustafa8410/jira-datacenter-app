@@ -104,7 +104,7 @@
                         <input type="hidden" name="username" value="$user.username"/>
                         <input type="hidden" name="action" value="remove-group"/>
                         <button class="btn btn-danger" type="submit" onclick="return confirm('Revoke this user\'s license?');">
-                            Remove from jira-users (Revoke License)
+                            Remove from jira-software-users (Revoke License)
                         </button>
                     </form>
                 </div>

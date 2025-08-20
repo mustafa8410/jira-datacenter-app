@@ -10,6 +10,7 @@ import com.atlassian.jira.security.groups.GroupManager;
 import com.atlassian.jira.user.ApplicationUser;
 import com.atlassian.jira.user.util.UserUtil;
 import com.atlassian.templaterenderer.TemplateRenderer;
+import com.atlassian.velocity.VelocityManager;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -17,10 +18,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @WebServlet("/plugins/servlet/bulk-action")
 public class BulkActionServlet extends HttpServlet {
@@ -30,13 +28,18 @@ public class BulkActionServlet extends HttpServlet {
     private final UserUtil userUtil = ComponentAccessor.getComponent(UserUtil.class);
     private final UserSearchService userSearchService = ComponentAccessor.getComponent(UserSearchService.class);
     private final TemplateRenderer templateRenderer = ComponentAccessor.getOSGiComponentInstanceOfType(TemplateRenderer.class);
+    private final VelocityManager velocityManager = ComponentAccessor.getComponent(VelocityManager.class);
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
         final ApplicationUser adminUser = ComponentAccessor.getJiraAuthenticationContext().getLoggedInUser();
         final JiraServiceContext serviceContext = new JiraServiceContextImpl(adminUser);
 
-        if(!groupManager.isUserInGroup(adminUser, "jira-administrators")) {
+        Set<String> adminGroups = new HashSet<>();
+        adminGroups.add("jira-administrators");
+        adminGroups.add("administrators");
+        adminGroups.add("system-administrators");
+        if(!groupManager.isUserInGroups(adminUser, adminGroups)) {
             resp.sendError(HttpServletResponse.SC_FORBIDDEN, "You do not have permission to perform this action");
             return;
         }
@@ -92,12 +95,16 @@ public class BulkActionServlet extends HttpServlet {
 //        }
 //        resp.getWriter().write("<a href=\"/jira/plugins/servlet//my-plugin-dashboard\">Go back to Dashboard</a></body></html>");
 
-        resp.setContentType("text/html");
+        resp.setContentType("text/html; charset=UTF-8");
         Map<String, Object> context = new HashMap<>();
         context.put("action", action);
         context.put("users", users);
         context.put("contextPath", req.getContextPath());
-        templateRenderer.render("templates/bulk-action-result.vm", context, resp.getWriter());
+//        templateRenderer.render("templates/bulk-action-result.vm", context, resp.getWriter());
+        String html = velocityManager.getEncodedBody("", "templates/bulk-action-result.vm", "UTF-8", context);
+        resp.getWriter().write(html);
+
+
 
     }
 }

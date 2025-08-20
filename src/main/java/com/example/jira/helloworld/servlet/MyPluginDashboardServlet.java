@@ -36,6 +36,7 @@ public class MyPluginDashboardServlet extends HttpServlet {
     private final GroupManager groupManager = ComponentAccessor.getComponent(GroupManager.class);
     private final JiraAuthenticationContext jiraAuthenticationContext = ComponentAccessor.getComponent(JiraAuthenticationContext.class);
     private final VelocityManager velocityManager = ComponentAccessor.getComponent(VelocityManager.class);
+    private final int DEFAULT_PAGE_SIZE = 10;
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
@@ -47,7 +48,7 @@ public class MyPluginDashboardServlet extends HttpServlet {
             resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Page number must be greater than 0");
             return;
         }
-        int pageSize = req.getParameter("pageSize") != null ? Integer.parseInt(req.getParameter("pageSize")) : 25;
+        int pageSize = req.getParameter("pageSize") != null ? Integer.parseInt(req.getParameter("pageSize")) : DEFAULT_PAGE_SIZE;
         if (pageSize < 1 || pageSize > 100) {
             resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Page size must be between 1 and 100");
             return;

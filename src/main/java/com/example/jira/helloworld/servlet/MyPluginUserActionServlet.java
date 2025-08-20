@@ -10,6 +10,7 @@ import com.atlassian.jira.security.groups.GroupManager;
 import com.atlassian.jira.user.ApplicationUser;
 import com.atlassian.jira.user.util.UserUtil;
 import com.atlassian.templaterenderer.TemplateRenderer;
+import com.atlassian.velocity.VelocityManager;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -17,7 +18,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 public class MyPluginUserActionServlet extends HttpServlet {
 
@@ -26,6 +29,7 @@ public class MyPluginUserActionServlet extends HttpServlet {
     private final UserSearchService userSearchService = ComponentAccessor.getComponent(UserSearchService.class);
     private final UserUtil userUtil = ComponentAccessor.getComponent(UserUtil.class);
     private final TemplateRenderer templateRenderer = ComponentAccessor.getOSGiComponentInstanceOfType(TemplateRenderer.class);
+    private final VelocityManager velocityManager = ComponentAccessor.getComponent(VelocityManager.class);
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
@@ -33,10 +37,16 @@ public class MyPluginUserActionServlet extends HttpServlet {
         final JiraServiceContext serviceContext = new JiraServiceContextImpl(adminUser);
         String action = req.getParameter("action");
         String username = req.getParameter("username");
-        if(!groupManager.isUserInGroup(adminUser, groupManager.getGroup("jira-administrators"))) {
+
+        Set<String> adminGroups = new HashSet<>();
+        adminGroups.add("jira-administrators");
+        adminGroups.add("administrators");
+        adminGroups.add("system-administrators");
+        if(!groupManager.isUserInGroups(adminUser, adminGroups)) {
             resp.sendError(HttpServletResponse.SC_FORBIDDEN, "You do not have permission to perform this action");
             return;
         }
+
         if (action == null || username == null) {
             resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Action and username parameters are required");
             return;
@@ -75,8 +85,10 @@ public class MyPluginUserActionServlet extends HttpServlet {
         context.put("contextPath", req.getContextPath());
 
         resp.setStatus(HttpServletResponse.SC_OK);
-        resp.setContentType("text/html");
-        templateRenderer.render("templates/user-action-result.vm", context, resp.getWriter());
+        resp.setContentType("text/html;charset=UTF-8");
+//        templateRenderer.render("templates/user-action-result.vm", context, resp.getWriter());
+        String html = velocityManager.getEncodedBody("", "templates/user-action-result.vm", "UTF-8", context);
+        resp.getWriter().write(html);
 
     }
 }
