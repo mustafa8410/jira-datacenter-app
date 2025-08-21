@@ -1,0 +1,22 @@
+/* Inactive User Auditor panel styles (compact) */
+.iua-panel { padding: 8px 0; }
+
+.iua-subtitle {
+  margin: 0 0 8px;
+  color: #6b778c;        /* AUI gri tonu */
+  line-height: 1.4;
+}
+
+.aui-buttons { margin: 0 0 8px; }
+
+#iua-open-dashboard {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.iua-hint {
+  margin: 0;
+  font-size: 12px;
+  color: #8993a4;
+}

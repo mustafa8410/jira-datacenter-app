@@ -27,6 +27,7 @@
     <web-panel key="hello-world-panel"
                location="atl.jira.view.issue.right.context"
                weight="100">
+        <label key="plugin.license.hygiene.panel.title"/>
         <resource name="view" type="velocity" location="/templates/helloworld.vm"/>
     </web-panel>
 
@@ -55,7 +56,7 @@
     <web-item key="debug-sidebar-link"
               location="system.project.navigation"
               weight="1">
-        <label>DEBUG SIDEBAR LINK</label>
+        <label key="plugin.license.hygiene.sidebar.link"/>
         <link>/plugins/servlet/my-plugin-dashboard</link>
     </web-item>
 

@@ -1,9 +1,27 @@
-## (Optional if you rely on contexts)
-## $webResourceManager.requireResource("YOUR_PLUGIN_KEY:helloWorld-resources")
+## AUI ve web-resource
+$webResourceManager.requireResource("com.atlassian.auiplugin:ajs")
+$webResourceManager.requireResource("${atlassian.plugin.key}:helloWorld-resources")
 
-<div>
-    <strong>Hello from my plugin!</strong><br/>
-    <a id="myLink" class="aui-button aui-button-primary" target="_blank" rel="noopener">
-        Go to Plugin Dashboard
-    </a>
+<div class="iua-panel">
+    <p class="iua-subtitle">
+        $i18n.getText("plugin.license.hygiene.subtitle")
+    </p>
+
+    <div class="aui-buttons">
+        <!-- NOT: href başlangıçta #; gerçek href'i JS yazacak -->
+        <a id="iua-open-dashboard"
+            class="aui-button aui-button-primary"
+            href="/jira/plugins/servlet/my-plugin-dashboard"
+            aria-label="$i18n.getText('plugin.license.hygiene.button')">
+
+            <span class="aui-icon aui-icon-small aui-iconfont-dashboard" aria-hidden="true"></span>
+            $i18n.getText("plugin.license.hygiene.button")
+        </a>
+    </div>
+
+    <p class="iua-hint">
+        Tip: Audit period (days‑since‑last‑login) is configurable on the dashboard.
+    </p>
 </div>
+
+
