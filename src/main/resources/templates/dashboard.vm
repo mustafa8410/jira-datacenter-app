@@ -304,38 +304,6 @@
         });
     }
 
-    // --- Filters for "never logged in", "inactive 30 days", etc. ---
-    function applyFilters() {
-        const filterNever = document.getElementById("filterNever").checked;
-        const filterInactive30 = document.getElementById("filterInactive30").checked;
-        const filterNoProjects = document.getElementById("filterNoProjects").checked;
-        const filterWarnings = document.getElementById("filterWarnings").checked;
-
-        const rows = document.querySelectorAll(".table tbody tr");
-        const now = new Date();
-        const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-
-        rows.forEach(row => {
-            const lastLoginText = row.cells[3]?.innerText.trim();
-            const hasWarning = row.cells[4]?.innerHTML.includes("warning-sign");
-
-            let visible = true;
-
-            if (filterNever && lastLoginText.toLowerCase() !== "never") visible = false;
-            if (filterInactive30 && lastLoginText.toLowerCase() !== "never") {
-                // Filtering not accurate unless backend provides a date; left as placeholder
-                const loginDate = new Date(lastLoginText);
-                if (!isNaN(loginDate) && loginDate > thirtyDaysAgo) visible = false;
-            }
-            if (filterNoProjects) {
-                visible = false; // Backend needs to provide this
-            }
-            if (filterWarnings && !hasWarning) visible = false;
-
-            row.style.display = visible ? "" : "none";
-        });
-    }
-
     // --- Bulk action: submit selected usernames across all pages ---
     function bulkAction(action) {
         if (selectedUsers.size === 0) {

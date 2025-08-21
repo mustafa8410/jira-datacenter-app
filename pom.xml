@@ -7,7 +7,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.example.jira</groupId>
     <artifactId>helloWorld</artifactId>
-    <version>1.0.7</version>
+    <version>1.0.10</version>
 
     <organization>
         <name>Example Company</name>
