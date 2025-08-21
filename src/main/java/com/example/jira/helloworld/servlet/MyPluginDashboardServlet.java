@@ -51,53 +51,27 @@ public class MyPluginDashboardServlet extends HttpServlet {
             resp.sendError(HttpServletResponse.SC_FORBIDDEN, "You do not have permission to access this page");
             return;
         }
+
         Integer page, pageSize;
-
-        if(req.getParameter("pageSize") == null) {
-            Object ps = session.getAttribute("dash:pageSize" + userKey);
-            if (ps instanceof Integer)
-                pageSize = (Integer) ps;
-            else
-                pageSize = DEFAULT_PAGE_SIZE;
+        try {
+            pageSize = getPageSize(req, session, resp, userKey);
         }
-        else {
-            try {
-                pageSize = Integer.parseInt(req.getParameter("pageSize"));
-                if (pageSize <= 0) {
-                    resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Page size must be a positive integer");
-                    return;
-                }
-            } catch (NumberFormatException e) {
-                resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid page size");
-                return;
-            }
+        catch (NumberFormatException e) {
+            resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid page size: " + e.getMessage());
+            return;
         }
-
-        if(req.getParameter("page") == null) {
-            Object p = session.getAttribute("dash:page" + userKey);
-            if (p instanceof Integer)
-                page = (Integer) p;
-            else {
-                resp.sendRedirect(req.getContextPath()
-                        + "/plugins/servlet/my-plugin-dashboard?page=1&pageSize=" + pageSize);
-                return;
-            }
+        try {
+            page = getPageNumber(req, session, resp, userKey);
         }
-        else {
-            try {
-                page = Integer.parseInt(req.getParameter("page"));
-                if(page <= 0) {
-                    resp.sendRedirect(req.getContextPath()
-                            + "/plugins/servlet/my-plugin-dashboard?page=1&pageSize=" + pageSize);
-                    return;
-                }
-            } catch (NumberFormatException e) {
-                resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid page number");
-                return;
-            }
+        catch (NumberFormatException e) {
+            resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid page number: " + e.getMessage());
+            return;
         }
-
-
+        catch (IndexOutOfBoundsException e) {
+            resp.sendRedirect(req.getContextPath()
+                    + "/plugins/servlet/my-plugin-dashboard?page=1&pageSize=" + pageSize);
+            return;
+        }
 
         Group softwareUsersGroup = groupManager.getGroup(LICENCE_GROUP);
         int userCount = groupManager.getUsersInGroupCount(softwareUsersGroup);
@@ -188,6 +162,58 @@ public class MyPluginDashboardServlet extends HttpServlet {
         return userRows;
     }
 
+    public Integer getPageSize(HttpServletRequest req, HttpSession session, HttpServletResponse resp, String userKey)
+            throws NumberFormatException {
+        Integer pageSize;
+        if(req.getParameter("pageSize") == null) {
+            Object ps = session.getAttribute("dash:pageSize" + userKey);
+            if (ps instanceof Integer)
+                pageSize = (Integer) ps;
+            else
+                pageSize = DEFAULT_PAGE_SIZE;
+        }
+        else {
+            try {
+                pageSize = Integer.parseInt(req.getParameter("pageSize"));
+                if (pageSize <= 0) {
+                    throw new NumberFormatException("Page size must be a positive integer");
+                }
+                if(pageSize > 100) {
+                    throw new NumberFormatException("Page size cannot exceed 100");
+                }
+            } catch (NumberFormatException e) {
+                throw new NumberFormatException("Invalid page size: " + e.getMessage());
+            }
+        }
+        return pageSize;
+    }
+
+    public Integer getPageNumber(HttpServletRequest req, HttpSession session, HttpServletResponse resp, String userKey)
+            throws NumberFormatException, IndexOutOfBoundsException {
+        Integer page;
+
+        if(req.getParameter("page") == null) {
+            Object p = session.getAttribute("dash:page" + userKey);
+            if (p instanceof Integer)
+                page = (Integer) p;
+            else {
+                throw new IndexOutOfBoundsException("Page number not found in session, redirecting to page 1");
+            }
+        }
+        else {
+            try {
+                page = Integer.parseInt(req.getParameter("page"));
+                if(page <= 0) {
+                    throw new IndexOutOfBoundsException("Page number must be a positive integer, redirecting to page 1");
+                }
+            } catch (NumberFormatException e) {
+                throw new NumberFormatException("Invalid page number: " + e.getMessage());
+            }
+        }
+
+        return page;
+
+    }
 
 }
 
