@@ -11,6 +11,7 @@ import com.atlassian.jira.user.ApplicationUser;
 import com.atlassian.jira.user.util.UserUtil;
 import com.atlassian.templaterenderer.TemplateRenderer;
 import com.atlassian.velocity.VelocityManager;
+import com.example.jira.helloworld.util.AdminUtil;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -20,7 +21,6 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.*;
 
-@WebServlet("/plugins/servlet/bulk-action")
 public class BulkActionServlet extends HttpServlet {
 
 
@@ -29,29 +29,27 @@ public class BulkActionServlet extends HttpServlet {
     private final UserSearchService userSearchService = ComponentAccessor.getComponent(UserSearchService.class);
     private final TemplateRenderer templateRenderer = ComponentAccessor.getOSGiComponentInstanceOfType(TemplateRenderer.class);
     private final VelocityManager velocityManager = ComponentAccessor.getComponent(VelocityManager.class);
+    private final String LICENCE_GROUP = "jira-software-users";
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
         final ApplicationUser adminUser = ComponentAccessor.getJiraAuthenticationContext().getLoggedInUser();
         final JiraServiceContext serviceContext = new JiraServiceContextImpl(adminUser);
 
-        Set<String> adminGroups = new HashSet<>();
-        adminGroups.add("jira-administrators");
-        adminGroups.add("administrators");
-        adminGroups.add("system-administrators");
-        if(!groupManager.isUserInGroups(adminUser, adminGroups)) {
+        if(!AdminUtil.isUserAdmin(adminUser)) {
             resp.sendError(HttpServletResponse.SC_FORBIDDEN, "You do not have permission to perform this action");
             return;
         }
-        List<String> selectedUsers = List.of(req.getParameterValues("selectedUsers"));
-        String action = req.getParameter("action");
-
-        if(!List.of("remove-group", "deactivate").contains(action)) {
-            resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid action specified");
+        String[] selectedUsersArray = req.getParameterValues("selectedUsers");
+        if (selectedUsersArray == null || selectedUsersArray.length == 0) {
+            resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "No users selected for action");
             return;
         }
-        if (selectedUsers.isEmpty()) {
-            resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "No users selected for action");
+        List<String> selectedUsers = List.of(selectedUsersArray);
+        String action = req.getParameter("action");
+
+        if(!List.of("remove-group").contains(action)) {
+            resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid action specified");
             return;
         }
         List<ApplicationUser> users = new ArrayList<>();
@@ -63,7 +61,7 @@ public class BulkActionServlet extends HttpServlet {
 
         }
         if(action.equals("remove-group")) {
-            Group group = groupManager.getGroup("jira-software-users");
+            Group group = groupManager.getGroup(LICENCE_GROUP);
             for(ApplicationUser currentUser: users) {
                 try {
                     userUtil.removeUserFromGroup(group, currentUser);

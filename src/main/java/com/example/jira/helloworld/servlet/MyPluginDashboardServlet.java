@@ -15,12 +15,14 @@ import com.atlassian.jira.util.PageRequests;
 import com.atlassian.templaterenderer.TemplateRenderer;
 import com.atlassian.velocity.VelocityManager;
 import com.example.jira.helloworld.UserRow;
+import com.example.jira.helloworld.util.AdminUtil;
 import com.example.jira.helloworld.util.UserWarningUtil;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -37,44 +39,89 @@ public class MyPluginDashboardServlet extends HttpServlet {
     private final JiraAuthenticationContext jiraAuthenticationContext = ComponentAccessor.getComponent(JiraAuthenticationContext.class);
     private final VelocityManager velocityManager = ComponentAccessor.getComponent(VelocityManager.class);
     private final int DEFAULT_PAGE_SIZE = 10;
+    private final String LICENCE_GROUP = "jira-software-users";
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         final ApplicationUser adminUser = jiraAuthenticationContext.getLoggedInUser();
+        HttpSession session = req.getSession();
+        String userKey = adminUser.getKey();
 
-
-        int page = req.getParameter("page") != null ? Integer.parseInt(req.getParameter("page")) : 1;
-        if (page < 1) {
-            resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Page number must be greater than 0");
+        if(!AdminUtil.isUserAdmin(adminUser)) {
+            resp.sendError(HttpServletResponse.SC_FORBIDDEN, "You do not have permission to access this page");
             return;
         }
-        int pageSize = req.getParameter("pageSize") != null ? Integer.parseInt(req.getParameter("pageSize")) : DEFAULT_PAGE_SIZE;
-        if (pageSize < 1 || pageSize > 100) {
-            resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Page size must be between 1 and 100");
-            return;
+        Integer page, pageSize;
+
+        if(req.getParameter("pageSize") == null) {
+            Object ps = session.getAttribute("dash:pageSize" + userKey);
+            if (ps instanceof Integer)
+                pageSize = (Integer) ps;
+            else
+                pageSize = DEFAULT_PAGE_SIZE;
+        }
+        else {
+            try {
+                pageSize = Integer.parseInt(req.getParameter("pageSize"));
+                if (pageSize <= 0) {
+                    resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Page size must be a positive integer");
+                    return;
+                }
+            } catch (NumberFormatException e) {
+                resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid page size");
+                return;
+            }
         }
 
-        Group softwareUsersGroup = groupManager.getGroup("jira-software-users");
+        if(req.getParameter("page") == null) {
+            Object p = session.getAttribute("dash:page" + userKey);
+            if (p instanceof Integer)
+                page = (Integer) p;
+            else {
+                resp.sendRedirect(req.getContextPath()
+                        + "/plugins/servlet/my-plugin-dashboard?page=1&pageSize=" + pageSize);
+                return;
+            }
+        }
+        else {
+            try {
+                page = Integer.parseInt(req.getParameter("page"));
+                if(page <= 0) {
+                    resp.sendRedirect(req.getContextPath()
+                            + "/plugins/servlet/my-plugin-dashboard?page=1&pageSize=" + pageSize);
+                    return;
+                }
+            } catch (NumberFormatException e) {
+                resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid page number");
+                return;
+            }
+        }
+
+
+
+        Group softwareUsersGroup = groupManager.getGroup(LICENCE_GROUP);
         int userCount = groupManager.getUsersInGroupCount(softwareUsersGroup);
+        int totalPages = (int) Math.ceil(userCount / (double) pageSize);
+        if (totalPages == 0) totalPages = 1;
 
         int start = (page - 1) * pageSize;
         // int end = Math.min(start + pageSize, userCount);
-        if (start >= userCount) {
-            resp.sendError(HttpServletResponse.SC_NOT_FOUND, "No users found for the specified page");
+        if (page > totalPages) {
+            session.removeAttribute("dash:page" + userKey);
+            resp.sendRedirect(req.getContextPath()
+                    + "/plugins/servlet/my-plugin-dashboard?page=" + totalPages + "&pageSize=" + pageSize);
             return;
         }
 
         PageRequest pageRequest = PageRequests.request((long) start, pageSize);
-        Page<ApplicationUser> usersPage = groupManager.getUsersInGroup("jira-software-users", true, pageRequest);
+        Page<ApplicationUser> usersPage = groupManager.getUsersInGroup(LICENCE_GROUP, true, pageRequest);
 
-        if (usersPage == null || usersPage.getValues().isEmpty()) {
-            resp.sendError(HttpServletResponse.SC_NOT_FOUND, "No users found for the specified page");
-            return;
-        }
+        List<UserRow> userRows = usersPage == null ? Collections.emptyList()
+                : createUserRows(usersPage.getValues(), adminUser);
 
 
-        List<UserRow> userRows = createUserRows(usersPage.getValues(), adminUser);
-
+        session.setAttribute("dash:page" + userKey, page);
+        session.setAttribute("dash:pageSize" + userKey, pageSize);
 
         Map<String, Object> contextMap = new HashMap<>();
         contextMap.put("users", userRows);
@@ -82,7 +129,6 @@ public class MyPluginDashboardServlet extends HttpServlet {
         contextMap.put("pageSize", pageSize);
         contextMap.put("contextPath", req.getContextPath());
 
-        int totalPages = (int) Math.ceil(userCount / (double) pageSize);
         contextMap.put("totalPages", totalPages);
 
         // render the template defined with .vm file

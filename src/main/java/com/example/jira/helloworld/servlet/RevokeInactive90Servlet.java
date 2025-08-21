@@ -14,6 +14,7 @@ import com.atlassian.jira.util.Page;
 import com.atlassian.jira.util.PageRequests;
 import com.atlassian.templaterenderer.TemplateRenderer;
 import com.atlassian.velocity.VelocityManager;
+import com.example.jira.helloworld.util.AdminUtil;
 import org.codehaus.jackson.map.ObjectMapper;
 
 import javax.servlet.ServletException;
@@ -37,24 +38,21 @@ public class RevokeInactive90Servlet extends HttpServlet {
     private final Group softwareUsersGroup = groupManager.getGroup("jira-software-users");
     private final TemplateRenderer templateRenderer = ComponentAccessor.getOSGiComponentInstanceOfType(TemplateRenderer.class);
     private final VelocityManager velocityManager = ComponentAccessor.getComponent(VelocityManager.class);
+    private final String LICENCE_GROUP = "jira-software-users";
 
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         final ApplicationUser adminUser = ComponentAccessor.getJiraAuthenticationContext().getLoggedInUser();
 
-        Set<String> adminGroups = new HashSet<>();
-        adminGroups.add("jira-administrators");
-        adminGroups.add("administrators");
-        adminGroups.add("system-administrators");
-        if(!groupManager.isUserInGroups(adminUser, adminGroups)) {
+        if(!AdminUtil.isUserAdmin(adminUser)) {
             resp.sendError(HttpServletResponse.SC_FORBIDDEN, "You do not have permission to perform this action");
             return;
         }
 
         Long start = 0L;
 
-        Page<ApplicationUser> users = groupManager.getUsersInGroup("jira-software-users", true,
+        Page<ApplicationUser> users = groupManager.getUsersInGroup(LICENCE_GROUP, true,
                 PageRequests.request(start, batchSize));
 
         boolean hasNext = true;
@@ -79,7 +77,7 @@ public class RevokeInactive90Servlet extends HttpServlet {
                 hasNext = false;
             else {
                 start += batchSize;
-                users = groupManager.getUsersInGroup("jira-software-users", true,
+                users = groupManager.getUsersInGroup(LICENCE_GROUP, true,
                         PageRequests.request(start, batchSize));
             }
         }

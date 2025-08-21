@@ -11,6 +11,7 @@ import com.atlassian.jira.user.ApplicationUser;
 import com.atlassian.jira.user.util.UserUtil;
 import com.atlassian.templaterenderer.TemplateRenderer;
 import com.atlassian.velocity.VelocityManager;
+import com.example.jira.helloworld.util.AdminUtil;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -30,6 +31,7 @@ public class MyPluginUserActionServlet extends HttpServlet {
     private final UserUtil userUtil = ComponentAccessor.getComponent(UserUtil.class);
     private final TemplateRenderer templateRenderer = ComponentAccessor.getOSGiComponentInstanceOfType(TemplateRenderer.class);
     private final VelocityManager velocityManager = ComponentAccessor.getComponent(VelocityManager.class);
+    private final String LICENCE_GROUP = "jira-software-users";
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
@@ -38,11 +40,7 @@ public class MyPluginUserActionServlet extends HttpServlet {
         String action = req.getParameter("action");
         String username = req.getParameter("username");
 
-        Set<String> adminGroups = new HashSet<>();
-        adminGroups.add("jira-administrators");
-        adminGroups.add("administrators");
-        adminGroups.add("system-administrators");
-        if(!groupManager.isUserInGroups(adminUser, adminGroups)) {
+        if(!AdminUtil.isUserAdmin(adminUser)) {
             resp.sendError(HttpServletResponse.SC_FORBIDDEN, "You do not have permission to perform this action");
             return;
         }
@@ -60,7 +58,7 @@ public class MyPluginUserActionServlet extends HttpServlet {
 
         if(action.equals("remove-group")) {
             try {
-                userUtil.removeUserFromGroup(groupManager.getGroup("jira-software-users"), user);
+                userUtil.removeUserFromGroup(groupManager.getGroup(LICENCE_GROUP), user);
             } catch (PermissionException | RemoveException e) {
                 resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to remove user from group: " + e.getMessage());
                 return;

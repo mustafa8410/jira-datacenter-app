@@ -9,6 +9,7 @@ import com.atlassian.jira.issue.search.SearchException;
 import com.atlassian.jira.user.ApplicationUser;
 import com.atlassian.templaterenderer.TemplateRenderer;
 import com.atlassian.velocity.VelocityManager;
+import com.example.jira.helloworld.util.AdminUtil;
 import com.example.jira.helloworld.util.UserWarningUtil;
 
 import javax.servlet.ServletException;
@@ -35,6 +36,12 @@ public class MyPluginUserDetailServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         final ApplicationUser adminUser = ComponentAccessor.getJiraAuthenticationContext().getLoggedInUser();
+
+        if(!AdminUtil.isUserAdmin(adminUser)) {
+            resp.sendError(HttpServletResponse.SC_FORBIDDEN, "You do not have permission to access this resource");
+            return;
+        }
+
         final JiraServiceContext serviceContext = new JiraServiceContextImpl(adminUser);
         String username = req.getParameter("username");
         if (username == null || username.isEmpty()) {
