@@ -82,6 +82,10 @@
         <url-pattern>/revoke-inactive-90</url-pattern>
     </servlet>
 
+    <servlet name="Group Search Servlet" key="group-search-servlet" class="com.example.jira.helloworld.servlet.GroupSearchServlet">
+        <url-pattern>/group-search</url-pattern>
+    </servlet>
+
 
 
 

@@ -16,6 +16,8 @@ import com.atlassian.templaterenderer.TemplateRenderer;
 import com.atlassian.velocity.VelocityManager;
 import com.example.jira.helloworld.UserRow;
 import com.example.jira.helloworld.util.AdminUtil;
+import com.example.jira.helloworld.util.FilterParams;
+import com.example.jira.helloworld.util.FilteredUserPager;
 import com.example.jira.helloworld.util.UserWarningUtil;
 
 import javax.servlet.ServletException;
@@ -29,6 +31,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.stream.Collectors;
 
 
 public class MyPluginDashboardServlet extends HttpServlet {
@@ -73,12 +76,35 @@ public class MyPluginDashboardServlet extends HttpServlet {
             return;
         }
 
-        Group softwareUsersGroup = groupManager.getGroup(LICENCE_GROUP);
-        int userCount = groupManager.getUsersInGroupCount(softwareUsersGroup);
-        int totalPages = (int) Math.ceil(userCount / (double) pageSize);
-        if (totalPages == 0) totalPages = 1;
+        boolean hasFilterParams =
+                req.getParameter("inactiveDays") != null ||
+                        req.getParameter("beforeDate")   != null ||
+                        req.getParameter("groups")       != null ||
+                        req.getParameter("groupMode")    != null;
 
-        int start = (page - 1) * pageSize;
+        FilterParams filterParams;
+        if(hasFilterParams) {
+            filterParams = FilterParams.from(req);
+            session.setAttribute("dash:filterParams" + userKey, filterParams);
+        }
+        else {
+            Object saved = session.getAttribute("dash:filters:" + userKey);
+            filterParams = (saved instanceof FilterParams) ? (FilterParams) saved
+                    : FilterParams.from(req);
+        }
+
+        FilteredUserPager filteredUserPager = new FilteredUserPager(LICENCE_GROUP, filterParams);
+        FilteredUserPager.PageResult pageResult = filteredUserPager.page(page, pageSize);
+        int totalMatches = pageResult.totalMatches;
+        int totalPages = Math.max(1, (int) Math.ceil(totalMatches / (double) pageSize));
+
+
+//        Group softwareUsersGroup = groupManager.getGroup(LICENCE_GROUP);
+//        int userCount = groupManager.getUsersInGroupCount(softwareUsersGroup);
+//        int totalPages = (int) Math.ceil(userCount / (double) pageSize);
+//        if (totalPages == 0) totalPages = 1;
+
+//        int start = (page - 1) * pageSize;
         // int end = Math.min(start + pageSize, userCount);
         if (page > totalPages) {
             session.removeAttribute("dash:page" + userKey);
@@ -87,15 +113,21 @@ public class MyPluginDashboardServlet extends HttpServlet {
             return;
         }
 
-        PageRequest pageRequest = PageRequests.request((long) start, pageSize);
-        Page<ApplicationUser> usersPage = groupManager.getUsersInGroup(LICENCE_GROUP, true, pageRequest);
+//        PageRequest pageRequest = PageRequests.request((long) start, pageSize);
+//        Page<ApplicationUser> usersPage = groupManager.getUsersInGroup(LICENCE_GROUP, true, pageRequest);
 
-        List<UserRow> userRows = usersPage == null ? Collections.emptyList()
-                : createUserRows(usersPage.getValues(), adminUser);
 
+//        List<UserRow> userRows = usersPage == null ? Collections.emptyList()
+//                : createUserRows(usersPage.getValues(), adminUser);
+
+        Collection<String> allGroupNames = groupManager.getAllGroupNames()
+                .stream().filter(name -> !name.equals(LICENCE_GROUP)).sorted(String.CASE_INSENSITIVE_ORDER).collect(Collectors.toList());
+
+        List<UserRow> userRows = createUserRows(pageResult.pageUsers, adminUser);
 
         session.setAttribute("dash:page" + userKey, page);
         session.setAttribute("dash:pageSize" + userKey, pageSize);
+        session.setAttribute("dash:filters:" + userKey, filterParams);
 
         Map<String, Object> contextMap = new HashMap<>();
         contextMap.put("users", userRows);
@@ -104,6 +136,13 @@ public class MyPluginDashboardServlet extends HttpServlet {
         contextMap.put("contextPath", req.getContextPath());
 
         contextMap.put("totalPages", totalPages);
+
+        contextMap.put("groupNames", allGroupNames);
+
+        contextMap.put("inactiveDays", filterParams.inactiveDays);
+        contextMap.put("beforeDate", filterParams.beforeDate == null ? "" : filterParams.beforeDate.toString());
+        contextMap.put("groups", filterParams.groups);
+        contextMap.put("groupMode", filterParams.groupMode);
 
         // render the template defined with .vm file
         resp.setContentType("text/html;charset=UTF-8");

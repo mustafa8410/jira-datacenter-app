@@ -206,6 +206,80 @@
             </div>
         </div>
     </div>
+
+<form class="row g-2 align-items-end mb-3" method="get" action="$contextPath/plugins/servlet/my-plugin-dashboard">
+    <input type="hidden" name="page" value="1"/>
+    <div class="col-auto">
+        <label class="form-label mb-0">Inactive:</label>
+        <select class="form-select" name="inactiveDays">
+            <option value="" #if(!$inactiveDays)selected#end>Any time</option>
+            #foreach($d in [30,60,90])
+                <option value="$d" #if($inactiveDays == $d)selected#end>$d+ days</option>
+            #end
+        </select>
+    </div>
+
+    <div class="col-auto">
+        <label class="form-label mb-0">Before date:</label>
+        <input type="date" class="form-control" name="beforeDate" value="$beforeDate"/>
+    </div>
+
+    <div class="col-auto">
+        <div class="dropdown" id="groupFilter">
+            <button class="btn btn-outline-secondary dropdown-toggle" type="button"
+                    data-bs-toggle="dropdown" aria-expanded="false" id="groupDropdownBtn">
+                #if($groups && !$groups.isEmpty())
+                    Groups ($groups.size())
+                #else
+                    Groups
+                #end
+            </button>
+
+            <div class="dropdown-menu p-3" style="min-width: 320px;">
+                <!-- Search box -->
+                <input type="text" id="groupFilterInput" class="form-control mb-2"
+                       placeholder="Search groups..." oninput="EV_groups.filterList()"/>
+
+                <!-- Quick actions -->
+                <div class="d-flex justify-content-between mb-2">
+                    <button type="button" class="btn btn-sm btn-light" onclick="EV_groups.selectAllVisible()">Select all</button>
+                    <button type="button" class="btn btn-sm btn-light" onclick="EV_groups.clearAll()">Clear</button>
+                </div>
+
+                <!-- Scrollable checkbox list -->
+                <div id="groupList" style="max-height: 260px; overflow:auto;">
+                    #set($__idx = 0)
+                    #foreach($g in $groupNames)
+                        #set($__idx = $__idx + 1)
+                        #set($checked = $groups && $groups.contains($g))
+                        <div class="form-check group-item">
+                            <input class="form-check-input group-chk" type="checkbox" value="$g" id="grp_$__idx" #if($checked)checked#end>
+                            <label class="form-check-label" for="grp_$__idx">$g</label>
+                        </div>
+                    #end
+                </div>
+
+                <hr class="my-2"/>
+
+                <!-- Group mode (OR / AND) -->
+                <label class="form-label">Match mode</label>
+                <select class="form-select form-select-sm mb-2" name="groupMode" id="groupModeSelect">
+                    <option value="OR" #if($groupMode != "AND")selected#end>Any of selected</option>
+                    <option value="AND" #if($groupMode == "AND")selected#end>All selected</option>
+                </select>
+
+                <!-- Hidden field that carries comma-separated group names -->
+                <input type="hidden" name="groups" id="groupsHiddenInput" value=""/>
+
+                <button type="button" class="btn btn-primary w-100" onclick="EV_groups.apply()">Apply groups</button>
+            </div>
+        </div>
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-primary">Apply</button>
+    </div>
+</form>
+
 #end
 <!-- JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -373,6 +447,82 @@
     }
 
 
+    const EV_groups = (function() {
+        function selectedValues() {
+            const vals = [];
+            document.querySelectorAll('.group-chk:checked').forEach(chk => vals.push(chk.value));
+            return vals;
+        }
+
+        function setHiddenFromSelection() {
+            const vals = selectedValues();
+            const hidden = document.getElementById('groupsHiddenInput');
+            if (hidden) hidden.value = vals.join(',');
+            updateButtonLabel(vals.length);
+        }
+
+        function updateButtonLabel(count) {
+            const btn = document.getElementById('groupDropdownBtn');
+            if (!btn) return;
+            btn.textContent = count > 0 ? `Groups (${count})` : 'Groups';
+        }
+
+        function filterList() {
+            const q = (document.getElementById('groupFilterInput').value || '').toLowerCase();
+            document.querySelectorAll('#groupList .group-item').forEach(div => {
+                const name = div.querySelector('label').textContent.toLowerCase();
+                div.style.display = name.includes(q) ? '' : 'none';
+            });
+        }
+
+        function selectAllVisible() {
+            document.querySelectorAll('#groupList .group-item').forEach(div => {
+                if (div.style.display !== 'none') {
+                    const chk = div.querySelector('.group-chk');
+                    chk.checked = true;
+                }
+            });
+            setHiddenFromSelection();
+        }
+
+        function clearAll() {
+            document.querySelectorAll('.group-chk').forEach(chk => chk.checked = false);
+            setHiddenFromSelection();
+        }
+
+        function apply() {
+            setHiddenFromSelection();
+            // Close dropdown via Bootstrap API
+            const dropdownEl = document.querySelector('#groupFilter [data-bs-toggle="dropdown"]');
+            const dd = dropdownEl ? bootstrap.Dropdown.getInstance(dropdownEl) : null;
+            if (dd) dd.hide();
+
+            // Reset page to 1 so results start from first page after filter change
+            const pageField = document.querySelector('form [name="page"]');
+            if (pageField) pageField.value = '1';
+
+            // Submit the outer filter form (closest form ancestor)
+            const form = document.getElementById('groupFilter').closest('form');
+            if (form) form.submit();
+        }
+
+        function init() {
+            // Initialize hidden value from server-rendered checkboxes
+            setHiddenFromSelection();
+
+            // Keep hidden input in sync on any checkbox change
+            document.addEventListener('change', function(e) {
+                if (e.target && e.target.classList && e.target.classList.contains('group-chk')) {
+                    setHiddenFromSelection();
+                }
+            });
+        }
+
+        return { init, filterList, selectAllVisible, clearAll, apply };
+    })();
+
+    // Init after DOM is ready
+    document.addEventListener('DOMContentLoaded', EV_groups.init);
 
 </script>
 
