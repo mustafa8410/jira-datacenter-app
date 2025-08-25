@@ -143,6 +143,7 @@ public class MyPluginDashboardServlet extends HttpServlet {
         contextMap.put("beforeDate", filterParams.beforeDate == null ? "" : filterParams.beforeDate.toString());
         contextMap.put("groups", filterParams.groups);
         contextMap.put("groupMode", filterParams.groupMode);
+        contextMap.put("query", filterParams.query == null ? "" : filterParams.query);
 
         // render the template defined with .vm file
         resp.setContentType("text/html;charset=UTF-8");

@@ -12,13 +12,14 @@ public class FilterParams implements Serializable {
     public final LocalDate beforeDate;
     public final Set<String> groups;
     public final String groupMode;
+    public final String query;
 
-    private FilterParams(Integer inactiveDays, LocalDate beforeDate, Set<String> groups, String groupMode) {
+    public FilterParams(Integer inactiveDays, LocalDate beforeDate, Set<String> groups, String groupMode, String query) {
         this.inactiveDays = inactiveDays;
         this.beforeDate = beforeDate;
         this.groups = groups;
         this.groupMode = groupMode;
-
+        this.query = query;
     }
 
     public static FilterParams from(HttpServletRequest req) {
@@ -51,7 +52,14 @@ public class FilterParams implements Serializable {
             throw new IllegalArgumentException("Invalid groupMode: " + groupMode + ". Must be 'OR' or 'AND'.");
         }
 
-        return new FilterParams(inactiveDays, beforeDate, groups, groupMode.trim());
+        String query = req.getParameter("query");
+        if(query == null)
+            query = "";
+        else
+            query = query.trim();
+
+
+        return new FilterParams(inactiveDays, beforeDate, groups, groupMode.trim(), query);
 
     }
 
@@ -62,6 +70,8 @@ public class FilterParams implements Serializable {
         return "seed=" + seedGroup
                 + "|groups=" + String.join(";", gs)
                 + "|inactiveDays=" + (inactiveDays == null ? "" : inactiveDays)
-                + "|beforeDate=" + (beforeDate == null ? "" : beforeDate);
+                + "|beforeDate=" + (beforeDate == null ? "" : beforeDate)
+                + "|groupMode=" + groupMode
+                + "|query=" + query;
     }
 }

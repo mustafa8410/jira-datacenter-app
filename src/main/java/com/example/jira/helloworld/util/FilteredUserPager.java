@@ -83,6 +83,15 @@ public class FilteredUserPager {
         return millis < cutoffMillis;
     }
 
+    private boolean passesQuery(ApplicationUser user) {
+        if(filterParams.query == null || filterParams.query.isEmpty())
+            return true;
+        String query = filterParams.query.toLowerCase(Locale.ROOT);
+        String username = user.getUsername() != null ? user.getUsername().toLowerCase(Locale.ROOT) : "";
+        String displayName = user.getDisplayName() != null ? user.getDisplayName().toLowerCase(Locale.ROOT) : "";
+        return username.contains(query) || displayName.contains(query);
+    }
+
     private Long cachedLastLogin(String username) {
         if(lastLoginCache.containsKey(username))
             return lastLoginCache.get(username);
@@ -128,7 +137,7 @@ public class FilteredUserPager {
                     groupManager.getUsersInGroup(group, true, PageRequests.request(offset, SCAN_BATCH));
             for(ApplicationUser user: batch.getValues()) {
                 if(!seenUsernames.contains(user.getUsername())){
-                    if(passesFiltersForAnd(user, cutoffMillis)) {
+                    if(passesQuery(user) && passesFiltersForAnd(user, cutoffMillis)) {
                         totalMatches++;
                         if(skipped < toSkip)
                             skipped++;
@@ -157,18 +166,15 @@ public class FilteredUserPager {
         long offset;
         boolean hasNext;
 
-        System.out.println("Groups: " + groups);
         for(String group: groups) {
             offset = 0;
             hasNext = true;
-            System.out.println("Processing group: " + group);
             while(hasNext) {
                 Page<ApplicationUser> batch = groupManager.getUsersInGroup(group, true,
                         PageRequests.request(offset, SCAN_BATCH));
                 for(ApplicationUser user: batch.getValues()) {
-                    System.out.println("Checking user: " + user.getUsername() + " for group: " + group);
                     if(!seenUsernames.contains(user.getUsername())) {
-                        if(passesInactivity(user, cutoffMillis)) {
+                        if(passesQuery(user) && passesInactivity(user, cutoffMillis)) {
                             totalMatches++;
                             if(skipped < toSkip) {
                                 skipped++;
