@@ -15,13 +15,13 @@ import java.util.stream.Collectors;
 
 public class GroupSearchServlet extends HttpServlet {
     private final GroupManager groupManager = ComponentAccessor.getComponent(GroupManager.class);
-    private final String LICENSE_GROUP = "jira-software-users";
+    private final String LICENCE_GROUP = "jira-software-users";
 
     @Override protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         String query = Optional.ofNullable(req.getParameter("q")).orElse("").toLowerCase();
         // naive: filter in-memory; for huge directories consider paging at the source
         List<String> all = groupManager.getAllGroupNames().stream().filter(
-                n -> !n.equalsIgnoreCase(LICENSE_GROUP)
+                n -> !n.equalsIgnoreCase(LICENCE_GROUP)
         ).collect(Collectors.toList());
         List<String> out = all.stream()
                 .filter(n -> n.toLowerCase().contains(query))

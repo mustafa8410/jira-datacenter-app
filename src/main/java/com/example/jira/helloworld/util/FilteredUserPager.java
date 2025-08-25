@@ -5,7 +5,6 @@ import com.atlassian.jira.component.ComponentAccessor;
 import com.atlassian.jira.security.groups.GroupManager;
 import com.atlassian.jira.user.ApplicationUser;
 import com.atlassian.jira.util.Page;
-import com.atlassian.jira.util.PageRequest;
 import com.atlassian.jira.util.PageRequests;
 
 import java.time.Instant;
@@ -18,7 +17,7 @@ public class FilteredUserPager {
     private final GroupManager groupManager = ComponentAccessor.getComponent(GroupManager.class);
     private final LoginService loginService = ComponentAccessor.getComponent(LoginService.class);
 
-    private final String licenseGroup;
+    private final String licenceGroup;
     private final FilterParams filterParams;
 
     private final Map<String, Long> lastLoginCache = new HashMap<>();
@@ -32,8 +31,8 @@ public class FilteredUserPager {
             this.totalMatches = totalMatches;
         }
     }
-    public FilteredUserPager(String licenseGroup, FilterParams filterParams) {
-        this.licenseGroup = licenseGroup;
+    public FilteredUserPager(String licenceGroup, FilterParams filterParams) {
+        this.licenceGroup = licenceGroup;
         this.filterParams = filterParams;
     }
 
@@ -104,7 +103,7 @@ public class FilteredUserPager {
     private List<String> sortGroupsBySize() {
         Set<String> groups = filterParams.groups;
         if(groups == null || groups.isEmpty())
-            return Collections.singletonList(licenseGroup);
+            return Collections.singletonList(licenceGroup);
         List<String> sortedGroups = new ArrayList<>(groups);
         sortedGroups.sort(Comparator.comparingInt(groupManager::getUsersInGroupCount));
         return sortedGroups;
