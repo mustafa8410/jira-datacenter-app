@@ -21,16 +21,17 @@
 
 <!--        <context>jira.view.issue</context>-->
         <context>atl.general</context>
+        <context>atl.admin</context>
 <!--        <context>helloWorld</context>-->
     </web-resource>
-
+<!--
     <web-panel key="hello-world-panel"
-               location="atl.jira.view.issue.right.context"
+               location="atl.admin.userbrowser.left.context"
                weight="100">
         <label key="plugin.license.hygiene.panel.title"/>
         <resource name="view" type="velocity" location="/templates/helloworld.vm"/>
     </web-panel>
-
+-->
     <!--    <web-section key="my-plugin-admin-section" location="system.admin/globalsettings" weight="100">-->
 <!--        <label>My Plugin</label>-->
 
@@ -59,6 +60,19 @@
         <label key="plugin.license.hygiene.sidebar.link"/>
         <link>/plugins/servlet/my-plugin-dashboard</link>
     </web-item>
+
+    <!-- Users (Admin) sol menüsüne "Inactive User Auditor" linki -->
+    <web-item key="iua-users-menu-link"
+            section="system.admin.top.navigation.bar/admin_users_menu"
+            weight="999">
+        <!-- i18n kullanıyorsan sadece key yaz: -->
+        <label key="plugin.license.hygiene.sidebar.link"/>
+        <!-- i18n dosyan yoksa şimdilik düz metin de olur:
+        <label>Inactive User Auditor</label>
+        -->
+        <link>/plugins/servlet/my-plugin-dashboard</link>
+    </web-item>
+
 
 
     <!-- Add a servlet to handle requests -->

@@ -1,4 +1,4 @@
-## AUI ve web-resource
+#*## AUI ve web-resource
 $webResourceManager.requireResource("com.atlassian.auiplugin:ajs")
 $webResourceManager.requireResource("${atlassian.plugin.key}:helloWorld-resources")
 
@@ -20,6 +20,34 @@ $webResourceManager.requireResource("${atlassian.plugin.key}:helloWorld-resource
 ##    <p class="iua-hint">
 ##        Tip: Audit period (days‑since‑last‑login) is configurable on the dashboard.
 ##    </p>
+</div>*#
+## Require AUI and your web resources (admin pages included)
+$webResourceManager.requireResource("com.atlassian.auiplugin:ajs")
+$webResourceManager.requireResource("${atlassian.plugin.key}:helloWorld-resources")
+
+## Compute context path server-side as a safe default
+#set($ctx = $request.getContextPath())
+
+<div class="iua-panel">
+    <p class="iua-subtitle">
+        $i18n.getText("plugin.license.hygiene.subtitle")
+    </p>
+
+    <div class="aui-buttons">
+        <a id="myLink"
+           class="aui-button aui-button-primary"
+           href="$ctx/plugins/servlet/my-plugin-dashboard"  ## server-side fallback
+           target="_blank"
+           rel="noopener"
+           aria-label="$i18n.getText('plugin.license.hygiene.button')">
+            <span class="aui-icon aui-icon-small aui-iconfont-dashboard" aria-hidden="true"></span>
+            $i18n.getText("plugin.license.hygiene.button")
+        </a>
+    </div>
+
+    ## İstersen küçük bir ipucu metni:
+    ## <p class="iua-hint">Tip: Audit period is configurable on the dashboard.</p>
 </div>
+
 
 
