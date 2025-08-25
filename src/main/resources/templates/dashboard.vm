@@ -33,7 +33,7 @@
                     </div>
                     <div class="card-body">
 
-                        <div class="mb-3 d-flex justify-content-between align-items-center">
+                        <div class="mb-3 d-flex justify-content-start align-items-center">
 
                             <form class="row g-2 align-items-end mb-3" method="get" action="$contextPath/plugins/servlet/my-plugin-dashboard">
                                 <input type="hidden" name="page" value="1"/>
@@ -111,12 +111,6 @@
                                     <button type="submit" class="btn btn-primary">Apply</button>
                                 </div>
                             </form>
-
-                            <div class="d-flex justify-content-center align-items-center">
-                                <label for="jumpToPage" class="me-2 mb-0">Jump to page:</label>
-                                <input type="number" id="jumpToPage" class="form-control" style="width:80px; display:inline-block;" min="1" max="$totalPages" placeholder="Page #" />
-                                <button class="btn btn-outline-primary ms-2" onclick="jumpToPage($totalPages, $pageSize)">Go</button>
-                            </div>
                         </div>
 
                         #if(!$users || $users.isEmpty())
@@ -247,7 +241,11 @@
 
                         <div class="mt-4 text-end d-flex justify-content-between align-items-end mb-1">
                             <div>
-                                <button class="btn btn-danger" onclick="revokeInactive90()">Revoke All Inactive for 90+ Days</button>
+                                <div class="d-flex justify-content-center align-items-center">
+                                    <label for="jumpToPage" class="me-2 mb-0">Jump to page:</label>
+                                    <input type="number" id="jumpToPage" class="form-control" style="width:80px; display:inline-block;" min="1" max="$totalPages" placeholder="Page #" />
+                                    <button class="btn btn-outline-primary ms-2" onclick="jumpToPage($totalPages, $pageSize)">Go</button>
+                                </div>
                             </div>
                             <div>
                                 <div class="btn-group">
@@ -266,7 +264,7 @@
                                 </div>
                                 <button class="btn btn-outline-danger ms-2" onclick="clearAllSelections()">Clear Selections</button>
                             </div>
-                            <form method="get" id="pageSizeSelect">
+                            <form method="get" id="pageSizeForm">
                                 <input type="hidden" name="page" value="$currentPage"/>
                                 <label for="pageSizeSelect" class="me-2">Rows per page:</label>
                                 <select name="pageSize" id="pageSizeSelect" class="form-select d-inline w-auto"
@@ -274,6 +272,10 @@
                                     #foreach($size in [10,25,50,100])
                                         <option value="$size" #if($pageSize == $size) selected #end>$size</option>
                                     #end
+                                    #if($pageSize != 10 && $pageSize != 25 && $pageSize != 50 && $pageSize != 100)
+                                        <option value="$pageSize" selected>$pageSize</option>
+                                    #end
+
                                 </select>
                             </form>
 
@@ -346,21 +348,30 @@
             cb.closest("tr").classList.toggle("selected-row", cb.checked);
         });
         document.getElementById('selectionMode').value = 'ALL_FILTERED';
-        document.getElementById('select-all').checked = true;
+        const selAllEl = document.getElementById('select-all');
+        if (selAllEl) selAllEl.checked = true;
         saveGlobalState();
         renderGlobalBanner();
     }
 
     function disableGlobalSelectAll() {
         globalSelectAll = false;
-        exclusions.clear();
+        // exclusions.clear();
         document.getElementById('selectionMode').value = 'MANUAL';
         // fall back to per-row manual set (uncheck everything visually, but keep your existing selectedUsers logic)
         document.querySelectorAll('.user-checkbox').forEach(cb => {
-            cb.checked = false;
-            cb.closest("tr").classList.remove("selected-row");
+            if(!selectedUsers.has(cb.value)) {
+                cb.checked = false;
+                cb.closest("tr").classList.remove("selected-row");
+            }
+            else {
+                cb.checked = true;
+                cb.closest("tr").classList.add("selected-row");
+            }
         });
-        document.getElementById('select-all').checked = false;
+        const selAllEl = document.getElementById('select-all');
+        if (selAllEl) selAllEl.checked = false;
+
         saveGlobalState();
         renderGlobalBanner();
         updateLocalStorage(); // keep your existing selectedUsers store
@@ -374,7 +385,8 @@
                 cb.checked = !exclusions.has(cb.value);
                 cb.closest("tr").classList.toggle("selected-row", cb.checked);
             });
-            document.getElementById("select-all").checked = true;
+            const selAllEl = document.getElementById('select-all');
+            if (selAllEl) selAllEl.checked = true; // or false
         } else {
             // original behavior
             document.querySelectorAll(".user-checkbox").forEach(cb => {
@@ -386,9 +398,7 @@
                     cb.closest("tr").classList.remove("selected-row");
                 }
             });
-            const allOnPage = Array.from(document.querySelectorAll(".user-checkbox"));
-            const allChecked = allOnPage.length > 0 && allOnPage.every(cb => selectedUsers.has(cb.value));
-            document.getElementById("select-all").checked = allChecked;
+
         }
     }
 
@@ -400,7 +410,7 @@
                 if (e.target.closest("td:first-child")) {
                     if (e.target === cb) { e.stopPropagation(); return; }
                     cb.checked = !cb.checked;
-                    cb.dispatchEvent(new Event('change')); // trigger our handler below
+                    cb.dispatchEvent(new Event('change', { bubbles: true })); // trigger our handler below
                     e.stopPropagation(); return;
                 }
                 window.location.href = this.dataset.href;
@@ -456,17 +466,13 @@
                 else selectedUsers.delete(username);
                 updateLocalStorage();
                 cb.closest("tr").classList.toggle("selected-row", cb.checked);
-
-                // Keep header checkbox in sync for this page
-                const allOnPage = Array.from(document.querySelectorAll(".user-checkbox"));
-                if (selAll) selAll.checked = allOnPage.length > 0 && allOnPage.every(x => x.checked);
             }
         });
     });
 
     // --- Bulk action: submit selected usernames across all pages ---
     function bulkAction(action) {
-        // keep your confirmation code as-is...
+
         if (!globalSelectAll && selectedUsers.size === 0) {
             alert("Please select at least one user.");
             return false;
@@ -530,21 +536,16 @@
 
     function clearAllSelections() {
         selectedUsers.clear();
-        updateLocalStorage();
+        exclusions.clear();
+        globalSelectAll = false;
+        saveGlobalState();        // persist cleared global state + exclusions
+        updateLocalStorage();     // persist cleared manual selection
+        document.getElementById('selectionMode').value = 'MANUAL';
         restoreCheckboxes();
+        renderGlobalBanner();
+        const selAll = document.getElementById('select-all');
+        if (selAll) selAll.checked = false;
     }
-
-    function revokeInactive90() {
-        if (!confirm("Are you sure you want to revoke licenses for ALL users inactive for 90 days or more? This cannot be undone.")) return;
-
-        const form = document.createElement("form");
-        form.method = "POST";
-        form.action = "/jira/plugins/servlet/revoke-inactive-90";
-        document.body.appendChild(form);
-        form.submit();
-        document.body.removeChild(form);
-    }
-
 
     const EV_groups = (function() {
         function selectedValues() {
