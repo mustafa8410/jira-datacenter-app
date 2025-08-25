@@ -196,4 +196,54 @@ public class FilteredUserPager {
         return result;
 
     }
+
+    public List<ApplicationUser> allMatches() {
+        Long cutoffMillis = computeCutoffMillis(filterParams);
+        List<String> groups = sortGroupsBySize();
+        List<ApplicationUser> allUsers = new ArrayList<>();
+        Set<String> seenUsernames = new HashSet<>();
+        if(filterParams.groupMode.equals("AND")) {
+            String group = groups.get(0); // For AND mode, we only have one group to process
+            long offset = 0;
+            boolean hasNext = true;
+            while(hasNext) {
+                Page<ApplicationUser> batch =
+                        groupManager.getUsersInGroup(group, true, PageRequests.request(offset, SCAN_BATCH));
+                for(ApplicationUser user: batch.getValues()) {
+                    if(!seenUsernames.contains(user.getUsername())){
+                        if(passesQuery(user) && passesFiltersForAnd(user, cutoffMillis)) {
+                            allUsers.add(user);
+                        }
+                        seenUsernames.add(user.getUsername());
+                    }
+                }
+                hasNext = !batch.isLast();
+                offset += SCAN_BATCH;
+            }
+        }
+        else if(filterParams.groupMode.equals("OR")) {
+            for(String group: groups) {
+                long offset = 0;
+                boolean hasNext = true;
+                while(hasNext) {
+                    Page<ApplicationUser> batch = groupManager.getUsersInGroup(group, true,
+                            PageRequests.request(offset, SCAN_BATCH));
+                    for(ApplicationUser user: batch.getValues()) {
+                        if(!seenUsernames.contains(user.getUsername())) {
+                            if(passesQuery(user) && passesInactivity(user, cutoffMillis)) {
+                                allUsers.add(user);
+                            }
+                            seenUsernames.add(user.getUsername());
+                        }
+                    }
+                    hasNext = !batch.isLast();
+                    offset += SCAN_BATCH;
+                }
+            }
+        }
+        else
+            throw new IllegalArgumentException("Invalid group mode: " + filterParams.groupMode);
+
+        return allUsers;
+    }
 }

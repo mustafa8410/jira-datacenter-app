@@ -12,12 +12,15 @@ import com.atlassian.jira.user.util.UserUtil;
 import com.atlassian.templaterenderer.TemplateRenderer;
 import com.atlassian.velocity.VelocityManager;
 import com.example.jira.helloworld.util.AdminUtil;
+import com.example.jira.helloworld.util.FilterParams;
+import com.example.jira.helloworld.util.FilteredUserPager;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.util.*;
 
@@ -40,12 +43,7 @@ public class BulkActionServlet extends HttpServlet {
             resp.sendError(HttpServletResponse.SC_FORBIDDEN, "You do not have permission to perform this action");
             return;
         }
-        String[] selectedUsersArray = req.getParameterValues("selectedUsers");
-        if (selectedUsersArray == null || selectedUsersArray.length == 0) {
-            resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "No users selected for action");
-            return;
-        }
-        List<String> selectedUsers = List.of(selectedUsersArray);
+
         String action = req.getParameter("action");
 
         if(!List.of("remove-group").contains(action)) {
@@ -53,13 +51,50 @@ public class BulkActionServlet extends HttpServlet {
             return;
         }
         List<ApplicationUser> users = new ArrayList<>();
-        for(String username: selectedUsers) {
-            ApplicationUser user = userSearchService.getUserByName(serviceContext, username);
-            if (user != null) {
-                users.add(user);
-            }
 
+
+
+        String selectionMode = req.getParameter("selectionMode");
+        if(selectionMode != null && selectionMode.equals("ALL_FILTERED")) {
+            HttpSession session = req.getSession();
+            String userKey = adminUser.getKey();
+            Object saved = session.getAttribute("dash:filterParams:" + userKey);
+            if(!(saved instanceof FilterParams)) {
+                resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "No saved filter found for bulk action with ALL_FILTERED mode");
+                return;
+            }
+            FilterParams filterParams = (FilterParams) saved;
+            FilteredUserPager filteredUserPager = new FilteredUserPager(LICENCE_GROUP, filterParams);
+            List<ApplicationUser> allUsers = filteredUserPager.allMatches();
+
+            String[] excludedUsernames = req.getParameterValues("exclude");
+            Set<String> exclude = new HashSet<>();
+            if(excludedUsernames != null) {
+                exclude.addAll(List.of(excludedUsernames));
+            }
+            for(ApplicationUser user: allUsers) {
+                if(!exclude.contains(user.getUsername())) {
+                    users.add(user);
+                }
+            }
         }
+        else {
+            String[] selectedUsersArray = req.getParameterValues("selectedUsers");
+            if (selectedUsersArray == null || selectedUsersArray.length == 0) {
+                resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "No users selected for action");
+                return;
+            }
+            List<String> selectedUsers = List.of(selectedUsersArray);
+            for(String username: selectedUsers) {
+                ApplicationUser user = userSearchService.getUserByName(serviceContext, username);
+                if (user != null) {
+                    users.add(user);
+                }
+
+            }
+        }
+
+
         if(action.equals("remove-group")) {
             Group group = groupManager.getGroup(LICENCE_GROUP);
             for(ApplicationUser currentUser: users) {
@@ -72,37 +107,16 @@ public class BulkActionServlet extends HttpServlet {
             }
         }
 
-//        else if(action.equals("deactivate")) {
-//            for(ApplicationUser currentUser: users) {
-//                try {
-//                    userUtil.removeUserFromGroups(groupManager.getGroupsForUser(currentUser.getUsername()), currentUser);
-//                } catch (PermissionException | RemoveException e) {
-//                    resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to deactivate user: " + e.getMessage());
-//                    return;
-//                }
-//            }
-//        }
         else {
             resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Unsupported action: " + action);
         }
-
-//        resp.setContentType("text/html");
-//        resp.getWriter().write("<html><body>Action " + action + " performed successfully on selected users.<br/>");
-//        for(ApplicationUser user : users) {
-//            resp.getWriter().write("User: " + user.getDisplayName() + "<br/>");
-//        }
-//        resp.getWriter().write("<a href=\"/jira/plugins/servlet//my-plugin-dashboard\">Go back to Dashboard</a></body></html>");
 
         resp.setContentType("text/html; charset=UTF-8");
         Map<String, Object> context = new HashMap<>();
         context.put("action", action);
         context.put("users", users);
         context.put("contextPath", req.getContextPath());
-//        templateRenderer.render("templates/bulk-action-result.vm", context, resp.getWriter());
         String html = velocityManager.getEncodedBody("", "templates/bulk-action-result.vm", "UTF-8", context);
         resp.getWriter().write(html);
-
-
-
     }
 }

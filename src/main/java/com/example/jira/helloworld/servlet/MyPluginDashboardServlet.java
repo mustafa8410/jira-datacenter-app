@@ -80,7 +80,8 @@ public class MyPluginDashboardServlet extends HttpServlet {
                 req.getParameter("inactiveDays") != null ||
                         req.getParameter("beforeDate")   != null ||
                         req.getParameter("groups")       != null ||
-                        req.getParameter("groupMode")    != null;
+                        req.getParameter("groupMode")    != null ||
+                        req.getParameter("query")        != null;
 
         FilterParams filterParams;
         if(hasFilterParams) {
@@ -88,7 +89,7 @@ public class MyPluginDashboardServlet extends HttpServlet {
             session.setAttribute("dash:filterParams" + userKey, filterParams);
         }
         else {
-            Object saved = session.getAttribute("dash:filters:" + userKey);
+            Object saved = session.getAttribute("dash:filterParams:" + userKey);
             filterParams = (saved instanceof FilterParams) ? (FilterParams) saved
                     : FilterParams.from(req);
         }
@@ -127,7 +128,7 @@ public class MyPluginDashboardServlet extends HttpServlet {
 
         session.setAttribute("dash:page" + userKey, page);
         session.setAttribute("dash:pageSize" + userKey, pageSize);
-        session.setAttribute("dash:filters:" + userKey, filterParams);
+        session.setAttribute("dash:filterParams:" + userKey, filterParams);
 
         Map<String, Object> contextMap = new HashMap<>();
         contextMap.put("users", userRows);
@@ -144,6 +145,7 @@ public class MyPluginDashboardServlet extends HttpServlet {
         contextMap.put("groups", filterParams.groups);
         contextMap.put("groupMode", filterParams.groupMode);
         contextMap.put("query", filterParams.query == null ? "" : filterParams.query);
+        contextMap.put("totalMatches", totalMatches);
 
         // render the template defined with .vm file
         resp.setContentType("text/html;charset=UTF-8");
