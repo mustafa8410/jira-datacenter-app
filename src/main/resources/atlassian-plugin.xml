@@ -70,7 +70,7 @@
         <!-- i18n dosyan yoksa şimdilik düz metin de olur:
         <label>Inactive User Auditor</label>
         -->
-        <link>/plugins/servlet/my-plugin-dashboard</link>
+        <link linkId="my-plugin-dashboard-link">/plugins/servlet/my-plugin-dashboard</link>
     </web-item>
 
 

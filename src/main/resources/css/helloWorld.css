@@ -20,3 +20,23 @@
   font-size: 12px;
   color: #8993a4;
 }
+
+/* Open Dashboard butonu */
+#my-plugin-dashboard-link {
+  display: block;                 /* Sidebar genişliğine otur */
+  width: 100%;                    /* Kolonun tamamını kapla */
+  box-sizing: border-box;          /* Padding dahil et */
+  background-color: #0052CC;
+  color: #fff !important;
+  padding: 8px 10px;
+  border-radius: 4px;
+  font-weight: 500;
+  text-decoration: none;
+  margin: 6px 0;
+  text-align: center;              /* Yazıyı ortala */
+  transition: background-color 0.2s ease-in-out;
+}
+
+#my-plugin-dashboard-link:hover {
+  background-color: #0747A6;
+}
