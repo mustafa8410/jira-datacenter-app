@@ -46,116 +46,25 @@
     }
 })();*/
 (function () {
-    function getCtx() {
-      var meta = document.querySelector('meta[name="ajs-context-path"]');
-      if (meta && meta.getAttribute('content')) return meta.getAttribute('content');
-      if (typeof AJS !== 'undefined' && AJS && typeof AJS.contextPath === 'function') {
-        try { return AJS.contextPath(); } catch (e) {}
-      }
-      return '';
-    }
-  
-    function wireLink() {
-      // *** Sidebar web-item <a> id'si: my-plugin-dashboard-link ***
-      var link = document.getElementById('my-plugin-dashboard-link');
-      if (!link) return false;
-  
-      var href = getCtx() + '/plugins/servlet/my-plugin-dashboard';
-  
-      // href farklıysa güncelle
-      if (link.getAttribute('href') !== href) {
-        link.setAttribute('href', href);
-      }
-  
-      // YENİ SEKMEDE AÇ
-      if (link.getAttribute('target') !== '_blank') {
-        link.setAttribute('target', '_blank');
-      }
-      // Güvenlik (tabnabbing koruması)
-      link.setAttribute('rel', 'noopener noreferrer');
-  
-      return true;
-    }
-  
-    // Jira sayfalarında AJS hazır olunca çalıştır
-    if (typeof AJS !== 'undefined' && AJS && typeof AJS.toInit === 'function') {
-      AJS.toInit(function () {
-        if (wireLink()) return;
-  
-        // Link sonradan DOM'a gelirse izle
-        var mo = new MutationObserver(function () {
-          if (wireLink()) mo.disconnect();
-        });
-        mo.observe(document.body, { childList: true, subtree: true });
-      });
-    } else {
-      // Çok nadir fallback
-      if (!wireLink()) {
-        document.addEventListener('DOMContentLoaded', function () {
-          wireLink() || setTimeout(wireLink, 0);
-        });
-      }
-    }
-  })();
-  
+  function setAttrs(a) {
+    if (!a) return;
+    if (a.getAttribute('target') !== '_blank') a.setAttribute('target', '_blank');
+    a.setAttribute('rel', 'noopener noreferrer');
+  }
 
-  (function () {
-    function getCtx() {
-      var meta = document.querySelector('meta[name="ajs-context-path"]');
-      if (meta && meta.getAttribute('content')) return meta.getAttribute('content');
-      if (typeof AJS !== 'undefined' && AJS && typeof AJS.contextPath === 'function') {
-        try { return AJS.contextPath(); } catch (e) {}
-      }
-      return '';
-    }
-  
-    // Hedef URL (context path ile)
-    function dashboardUrl() {
-      return getCtx() + '/plugins/servlet/my-plugin-dashboard';
-    }
-  
-    // Capturing-phase global click interceptor
-    function captureOpenInNewTab(e) {
-      // En yakın <a> öğesini bul
-      var a = e.target && e.target.closest && e.target.closest('a');
-      if (!a) return;
-  
-      // Sadece bizim linkler: ID veya href eşleşmesi
-      var url = a.getAttribute('href') || '';
-      var abs = dashboardUrl();
-      var isTarget =
-        a.id === 'my-plugin-dashboard-link' ||
-        url.endsWith('/plugins/servlet/my-plugin-dashboard') ||
-        url === abs;
-  
-      if (!isTarget) return;
-  
-      // Kullanıcı zaten yeni sekme istiyorsa (Cmd/Ctrl/Middle) dokunma
-      if (e.metaKey || e.ctrlKey || e.button === 1) return;
-  
-      // Default davranışı durdur ve biz açalım
-      e.preventDefault();
-      e.stopPropagation();
-      if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
-  
-      // URL'i normalize et (relative ise context ekle)
-      var finalUrl = url || abs;
-      if (finalUrl.charAt(0) === '/') finalUrl = getCtx() + finalUrl;
-  
-      var win = window.open(finalUrl, '_blank');
-      if (win) { try { win.opener = null; } catch (err) {} }
-    }
-  
-    // AJS hazır olduğunda kur; yoksa DOMContentLoaded
-    if (typeof AJS !== 'undefined' && AJS && typeof AJS.toInit === 'function') {
-      AJS.toInit(function () {
-        document.addEventListener('click', captureOpenInNewTab, true); // << capturing!
-        // Sonradan gelen nodelar için ayrı ek işleme gerek yok; global dinleyici yeterli
-      });
-    } else {
-      document.addEventListener('DOMContentLoaded', function () {
-        document.addEventListener('click', captureOpenInNewTab, true);
-      });
-    }
-  })();
+  function init() {
+    setAttrs(document.getElementById('myLink'));                   // panel button
+    setAttrs(document.getElementById('my-plugin-dashboard-link')); // admin web-item
+  }
+
+  if (typeof AJS !== 'undefined' && AJS && typeof AJS.toInit === 'function') {
+    AJS.toInit(init);
+  } else if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+
+
   
