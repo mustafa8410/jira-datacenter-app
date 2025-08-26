@@ -82,6 +82,7 @@ public class MyPluginUserDetailServlet extends HttpServlet {
             context.put("created30", created30Days);
         } catch (Exception e) {
             resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Error retrieving issue counts for user: " + user.getUsername());
+            return;
         }
 
         // get the groups of the user
@@ -94,6 +95,7 @@ public class MyPluginUserDetailServlet extends HttpServlet {
             context.put("projectsLast30Days", getProjectsForUserLastGivenDays(adminUser, user, 30));
         } catch (SearchException e) {
             resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Error retrieving projects for user: " + user.getUsername());
+            return;
         }
 
         List<String> warnings = new ArrayList<>();
@@ -101,6 +103,7 @@ public class MyPluginUserDetailServlet extends HttpServlet {
             warnings = UserWarningUtil.getWarningsForUser(user, adminUser);
         } catch (Exception e) {
             resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Error retrieving warnings for user: " + user.getUsername());
+            return;
         }
         context.put("warnings", warnings);
         context.put("contextPath", req.getContextPath());

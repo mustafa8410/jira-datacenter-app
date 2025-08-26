@@ -43,17 +43,39 @@
                                 </div>
                                 <div class="col-auto">
                                     <label class="form-label mb-0">Inactive:</label>
-                                    <select class="form-select" name="inactiveDays">
-                                        <option value="" #if(!$inactiveDays)selected#end>Any time</option>
-                                        #foreach($d in [30,60,90])
-                                            <option value="$d" #if($inactiveDays == $d)selected#end>$d+ days</option>
-                                        #end
-                                    </select>
+
+                                    <div class="input-group">
+                                        <select class="form-select" id="inactiveDaysSelect">
+                                            <option value="" #if(!$inactiveDays)selected#end>Any time</option>
+                                            #foreach($d in [30,60,90])
+                                                <option value="$d" #if($inactiveDays == $d)selected#end>$d+ days</option>
+                                            #end
+                                            <!-- Select this when $inactiveDays is custom (not 30/60/90) -->
+                                            <option value="custom"
+                                                    #if($inactiveDays && $inactiveDays != 30 && $inactiveDays != 60 && $inactiveDays != 90)selected#end>
+                                                Custom…
+                                            </option>
+                                        </select>
+
+                                        <input type="number"
+                                               class="form-control"
+                                               id="inactiveDaysCustom"
+                                               min="1"
+                                               placeholder="days"
+                                               #if(!($inactiveDays && $inactiveDays != 30 && $inactiveDays != 60 && $inactiveDays != 90))disabled#end
+                                               value="#if($inactiveDays && $inactiveDays != 30 && $inactiveDays != 60 && $inactiveDays != 90)$inactiveDays#end" />
+                                    </div>
+
+                                    <!-- The ONLY field named 'inactiveDays' that the server reads -->
+                                    <input type="hidden" name="inactiveDays" id="inactiveDays"
+                                           value="#if($inactiveDays)$inactiveDays#end" />
                                 </div>
+
 
                                 <div class="col-auto">
                                     <label class="form-label mb-0">Before date:</label>
-                                    <input type="date" class="form-control" name="beforeDate" value="$beforeDate"/>
+                                    <input type="date" class="form-control" name="beforeDate" id="beforeDateInput" value="$beforeDate"/>
+
                                 </div>
 
                                 <div class="col-auto">
@@ -150,8 +172,8 @@
                                 </tr>
                                 #end
                             </tbody>
-                        #end
                         </table>
+                        #end
 
                         #set($window = 2) ## how many pages to show on each side of current page
                         #set($startPage = $currentPage - $window)
@@ -468,6 +490,18 @@
                 cb.closest("tr").classList.toggle("selected-row", cb.checked);
             }
         });
+
+        const sel    = document.getElementById('inactiveDaysSelect');
+        const custom = document.getElementById('inactiveDaysCustom');
+        const before = document.getElementById('beforeDateInput');
+
+        if (sel)    sel.addEventListener('change', syncInactiveDays);
+        if (custom) custom.addEventListener('input',  syncInactiveDays);
+        if (before) before.addEventListener('change', updateInactiveDisabledByBeforeDate);
+
+        // initial state
+        syncInactiveDays();
+        updateInactiveDisabledByBeforeDate();
     });
 
     // --- Bulk action: submit selected usernames across all pages ---
@@ -623,6 +657,49 @@
 
     // Init after DOM is ready
     document.addEventListener('DOMContentLoaded', EV_groups.init);
+
+    function syncInactiveDays() {
+        const sel    = document.getElementById('inactiveDaysSelect');
+        const custom = document.getElementById('inactiveDaysCustom');
+        const hidden = document.getElementById('inactiveDays');
+
+        if (!sel || !custom || !hidden) return;
+
+        if (sel.value === 'custom') {
+            custom.disabled = false;
+            const v = parseInt(custom.value, 10);
+            hidden.value = Number.isFinite(v) && v > 0 ? String(v) : '';
+        } else {
+            custom.disabled = true;
+            custom.value = '';
+            hidden.value = sel.value; // "", "30", "60", "90"
+        }
+    }
+
+    function updateInactiveDisabledByBeforeDate() {
+        const before = document.getElementById('beforeDateInput');
+        const sel    = document.getElementById('inactiveDaysSelect');
+        const custom = document.getElementById('inactiveDaysCustom');
+        const hidden = document.getElementById('inactiveDays');
+        if (!before || !sel || !custom || !hidden) return;
+
+        const disable = !!before.value;
+
+        sel.disabled = disable;
+        // custom should be disabled if either 'beforeDate' set OR select isn't 'custom'
+        custom.disabled = disable || sel.value !== 'custom';
+
+        if (disable) {
+            // clear values so server doesn't get any inactiveDays when a date is chosen
+            sel.value = '';
+            custom.value = '';
+            hidden.value = '';
+        } else {
+            // re-sync values if the date was cleared
+            syncInactiveDays();
+        }
+    }
+
 
 </script>
 

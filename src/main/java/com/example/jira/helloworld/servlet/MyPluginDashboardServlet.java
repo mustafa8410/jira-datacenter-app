@@ -86,7 +86,7 @@ public class MyPluginDashboardServlet extends HttpServlet {
         FilterParams filterParams;
         if(hasFilterParams) {
             filterParams = FilterParams.from(req);
-            session.setAttribute("dash:filterParams" + userKey, filterParams);
+            session.setAttribute("dash:filterParams:" + userKey, filterParams);
         }
         else {
             Object saved = session.getAttribute("dash:filterParams:" + userKey);
