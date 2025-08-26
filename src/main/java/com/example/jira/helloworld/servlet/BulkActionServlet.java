@@ -95,6 +95,30 @@ public class BulkActionServlet extends HttpServlet {
         }
 
 
+        if(users == null || users.isEmpty()) {
+            resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "No users found for the specified criteria");
+            return;
+        }
+
+        boolean confirmed = "1".equals(req.getParameter("confirm"));
+        if (!confirmed) {
+            resp.setContentType("text/html; charset=UTF-8");
+            Map<String, Object> ctx = new HashMap<>();
+            ctx.put("action", action);
+            ctx.put("users", users);
+            ctx.put("contextPath", req.getContextPath());
+
+            // echo original selection inputs so the confirmation POST can re-send them
+            ctx.put("selectionMode", Optional.ofNullable(req.getParameter("selectionMode")).orElse("MANUAL"));
+            ctx.put("selectedUsers", Optional.ofNullable(req.getParameterValues("selectedUsers")).orElse(new String[0]));
+            ctx.put("exclude", Optional.ofNullable(req.getParameterValues("exclude")).orElse(new String[0]));
+
+            String html = velocityManager.getEncodedBody("", "templates/bulk-action-confirm.vm", "UTF-8", ctx);
+            resp.getWriter().write(html);
+            return;
+        }
+
+
         if(action.equals("remove-group")) {
             Group group = groupManager.getGroup(LICENCE_GROUP);
             for(ApplicationUser currentUser: users) {
